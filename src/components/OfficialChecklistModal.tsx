@@ -309,7 +309,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         homePort: form.homePort,
         inspectionDate: form.inspectionDate,
         inspectionPort: form.inspectionLocation,
-        leadAgency: 'Tim Pengawasan Bersama (Kemnaker, KKP/PSDKP, KSOP & DFW)',
+        leadAgency: 'Tim Pengawasan Bersama (Kemnaker, KKP/PSDKP & KSOP)',
         inspectors: `${form.fisheryInspectorName || 'Pengawas Perikanan'} & ${form.laborInspectorName || 'Pengawas Ketenagakerjaan'}`,
         crewData,
         checklistData: form,
@@ -317,7 +317,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         riskEvaluation,
         followUpStatus: riskEvaluation.riskLevel === 'HIGH' ? 'PENDING' : 'RESOLVED',
         officialNotes: form.additionalNotes || riskEvaluation.recommendation,
-        createdBy: currentUserEmail || 'pengawas@dfw.or.id',
+        createdBy: currentUserEmail || 'pengawas@inspeksikapal.go.id',
         createdAt: new Date().toISOString()
       };
 

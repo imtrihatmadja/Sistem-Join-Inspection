@@ -38,7 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Autentikasi Pengawas</h3>
-              <p className="text-xs text-slate-500">DFW Monev & Project Hub</p>
+              <p className="text-xs text-slate-500">Sistem Inpeksi Kapal</p>
             </div>
           </div>
           <button
@@ -50,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <p className="text-xs text-slate-600 leading-relaxed">
-          Silakan masuk menggunakan akun Google resmi instansi atau personel pengawas gabungan (PSDKP, Disnaker, KSOP, DFW) untuk sinkronisasi cloud real-time.
+          Silakan masuk menggunakan akun Google resmi instansi atau personel pengawas gabungan (PSDKP, Disnaker, Kemnaker, KSOP) untuk sinkronisasi cloud real-time.
         </p>
 
         {errorMsg && (

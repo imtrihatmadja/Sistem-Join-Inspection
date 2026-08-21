@@ -26,8 +26,8 @@ export const InspectionFormModal: React.FC<InspectionFormModalProps> = ({
   const [customRegNumber, setCustomRegNumber] = useState<string>('');
   const [inspectionPort, setInspectionPort] = useState<string>(INDONESIAN_PORTS[1] || 'PPS Nizam Zachman Jakarta');
   const [inspectionDate, setInspectionDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [leadAgency, setLeadAgency] = useState<string>('Tim Pengawas Gabungan (PSDKP - Disnaker - KSOP - DFW)');
-  const [inspectors, setInspectors] = useState<string>('Pengawas Pelabuhan & Observer DFW');
+  const [leadAgency, setLeadAgency] = useState<string>('Tim Pengawas Gabungan (PSDKP - Disnaker - KSOP)');
+  const [inspectors, setInspectors] = useState<string>('Pengawas Pelabuhan & Wasnaker');
 
   // Crew compliance state
   const [crewData, setCrewData] = useState<CrewComplianceData>({
@@ -132,7 +132,7 @@ export const InspectionFormModal: React.FC<InspectionFormModalProps> = ({
         followUpStatus: liveRisk.riskLevel === 'HIGH' ? 'PENDING' : (liveRisk.riskLevel === 'LOW' ? 'RESOLVED' : 'IN_PROGRESS'),
         officialNotes: officialNotes || `Hasil inspeksi bersama pengawasan kepatuhan ketenagakerjaan di ${inspectionPort}.`,
         actionDeadline: actionDeadline || undefined,
-        createdBy: currentUserEmail || 'pengawas@dfw.or.id',
+        createdBy: currentUserEmail || 'pengawas@inspeksikapal.go.id',
         createdAt: new Date().toISOString()
       };
 
@@ -277,7 +277,7 @@ export const InspectionFormModal: React.FC<InspectionFormModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="PSDKP, Wasnaker Kemnaker/Disnaker, KSOP Syahbandar, Tim DFW"
+                  placeholder="PSDKP, Wasnaker Kemnaker/Disnaker, KSOP Syahbandar"
                   value={inspectors}
                   onChange={(e) => setInspectors(e.target.value)}
                   className="w-full text-xs rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-teal-500 bg-white"

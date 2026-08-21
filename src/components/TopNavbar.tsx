@@ -91,7 +91,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             </h2>
             <div className="sm:hidden flex items-center gap-1 text-[10px] text-slate-500 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-              <span className="truncate">DFW • ILO C188 / KKP</span>
+              <span className="truncate">Pengawasan • ILO C188 / KKP</span>
             </div>
           </div>
 

@@ -100,7 +100,7 @@ export const VesselEvidenceVault: React.FC<VesselEvidenceVaultProps> = ({
         category: formCategory,
         description: formDescription.trim() || `Bukti ${targetFile.name} untuk ${vessel.name}`,
         inspectionId,
-        uploadedBy: currentUserEmail || 'pengawas@dfw.or.id',
+        uploadedBy: currentUserEmail || 'pengawas@inspeksikapal.go.id',
         accessToken: token,
         onProgress: (p) => setUploadProgress(p)
       });

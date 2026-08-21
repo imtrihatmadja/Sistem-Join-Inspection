@@ -512,7 +512,7 @@ export async function fetchInspectionsFromSupabase(): Promise<{ data: Inspection
         followUpStatus: row.follow_up_status || 'PENDING',
         officialNotes: row.official_notes || '',
         actionDeadline: row.action_deadline || undefined,
-        createdBy: row.created_by || 'Admin DFW',
+        createdBy: row.created_by || 'Admin Pengawas',
         createdAt: row.created_at || new Date().toISOString()
       };
     });
@@ -577,7 +577,7 @@ export async function fetchEvidencesFromSupabase(): Promise<{ data: VesselEviden
  */
 export function getCompleteSqlSchema(): string {
   return `-- =========================================================================
--- BLUEPRINT DATABASE TERPUSAT INSPEKSI BERSAMA KAPAL PERIKANAN (DFW INDONESIA)
+-- BLUEPRINT DATABASE TERPUSAT INSPEKSI BERSAMA KAPAL PERIKANAN
 -- Database Engine: PostgreSQL (Supabase)
 -- Standar: ILO C188 / PSMA / KKP / Kemnaker RI
 -- =========================================================================

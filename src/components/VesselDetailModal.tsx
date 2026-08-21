@@ -415,7 +415,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
               
               <div className="text-center pb-3 border-b-2 border-slate-800 space-y-1">
                 <div className="font-bold text-[10px] sm:text-xs uppercase tracking-widest text-slate-500">
-                  DESTRUCTIVE FISHING WATCH (DFW) INDONESIA & TIM PENGAWASAN
+                  TIM PENGAWASAN BERSAMA KETENAGAKERJAAN KAPAL PERIKANAN
                 </div>
                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900 uppercase">
                   LEMBAR RESUME PENGAWASAN KAPAL PERIKANAN

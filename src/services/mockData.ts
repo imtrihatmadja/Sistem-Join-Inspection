@@ -150,8 +150,8 @@ export const INITIAL_INSPECTIONS: InspectionRecord[] = [
     homePort: 'Pelabuhan Perikanan Samudera Nizam Zachman Jakarta',
     inspectionDate: '2025-02-14',
     inspectionPort: 'PPS Nizam Zachman Jakarta',
-    leadAgency: 'Tim Pengawas Gabungan (PSDKP - Kemnaker - KSOP - DFW)',
-    inspectors: 'Hendra Wijaya (PSDKP), Rahmat Santoso (Wasnaker), Dwi Putra (DFW)',
+    leadAgency: 'Tim Pengawas Gabungan (PSDKP - Kemnaker - KSOP)',
+    inspectors: 'Hendra Wijaya (PSDKP), Rahmat Santoso (Wasnaker), Dwi Putra (Pengawas Pelabuhan)',
     crewData: {
       totalCrew: 24,
       crewWithPkl: 14,
@@ -208,7 +208,7 @@ export const INITIAL_INSPECTIONS: InspectionRecord[] = [
     followUpStatus: 'PENDING',
     officialNotes: 'Berita acara telah disampaikan ke Syahbandar perikanan setempat untuk menahan SPB sementara.',
     actionDeadline: '2025-02-28',
-    createdBy: 'admin@dfw.or.id',
+    createdBy: 'admin@inspeksikapal.go.id',
     createdAt: '2025-02-14T11:30:00Z'
   },
   {
@@ -249,7 +249,7 @@ export const INITIAL_INSPECTIONS: InspectionRecord[] = [
     },
     followUpStatus: 'RESOLVED',
     officialNotes: 'Contoh kepatuhan yang baik. 100% ABK memiliki PKL terdaftar dan jaminan BPJS aktif.',
-    createdBy: 'admin@dfw.or.id',
+    createdBy: 'admin@inspeksikapal.go.id',
     createdAt: '2025-02-17T14:15:00Z'
   }
 ];

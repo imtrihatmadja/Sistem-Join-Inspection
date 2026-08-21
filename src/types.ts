@@ -188,7 +188,7 @@ export interface InspectionRecord {
   homePort: string;
   inspectionDate: string;
   inspectionPort: string;
-  leadAgency: string; // e.g. 'PSDKP - KKP', 'Pengawas Ketenagakerjaan Kemnaker', 'Syahbandar KSOP', 'Tim Gabungan DFW'
+  leadAgency: string; // e.g. 'PSDKP - KKP', 'Pengawas Ketenagakerjaan Kemnaker', 'Syahbandar KSOP', 'Tim Pengawas Gabungan'
   inspectors: string; // Nama pengawas gabungan
   crewData: CrewComplianceData;
   checklistData?: OfficialChecklistForm; // Formulir Daftar Periksa Lengkap

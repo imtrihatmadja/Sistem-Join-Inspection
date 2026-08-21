@@ -40,13 +40,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-base tracking-tight">DFW Indonesia</span>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                  Monev Hub
+                <span className="font-bold text-slate-900 text-base tracking-tight">Sistem Inpeksi Kapal</span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  Inspeksi Bersama
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-normal">
-                Sistem Inspeksi Bersama Ketenagakerjaan Kapal Perikanan
+                Sistem Inpeksi Bersama Ketenagakerjaan di Kapal Perikanan
               </p>
             </div>
           </div>

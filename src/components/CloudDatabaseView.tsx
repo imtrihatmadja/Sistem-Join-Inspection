@@ -296,7 +296,7 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-[11px] text-slate-500 font-semibold">Struktur Folder Drive</div>
               <div className="text-xs font-bold text-slate-700 mt-1 truncate">
-                /DFW-Monev/[KAPAL]
+                /Inspeksi-Kapal/[KAPAL]
               </div>
             </div>
           </div>

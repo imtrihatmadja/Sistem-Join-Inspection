@@ -316,7 +316,7 @@ export async function uploadEvidenceToGoogleDrive(
           webViewLink: driveData.webViewLink || `https://drive.google.com/file/d/${driveData.id}/view`,
           webContentLink: driveData.webContentLink,
           thumbnailLink: driveData.thumbnailLink || (file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined),
-          uploadedBy: uploadedBy || 'pengawas@dfw.or.id',
+          uploadedBy: uploadedBy || 'pengawas@inspeksikapal.go.id',
           uploadedAt: new Date().toISOString(),
           storageProvider: 'GOOGLE_DRIVE',
           syncStatus: 'SYNCED'
@@ -363,7 +363,7 @@ export async function uploadEvidenceToGoogleDrive(
     driveFolderName: folderName,
     webViewLink: `https://drive.google.com/file/d/${simulatedDriveId}/view`,
     thumbnailLink: previewUrl || (file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined),
-    uploadedBy: uploadedBy || 'pengawas@dfw.or.id',
+    uploadedBy: uploadedBy || 'pengawas@inspeksikapal.go.id',
     uploadedAt: new Date().toISOString(),
     storageProvider: 'GOOGLE_DRIVE',
     syncStatus: 'SYNCED'

@@ -4,19 +4,37 @@ import { Vessel, InspectionRecord, VesselEvidence, SupabaseConfig } from '../typ
 const SUPABASE_STORAGE_URL_KEY = 'dfw_supabase_url_cfg';
 const SUPABASE_STORAGE_KEY_KEY = 'dfw_supabase_anon_key_cfg';
 
-export function getSupabaseCredentials(): { url: string; anonKey: string } {
+// Built-in system fallback defaults if environment variable or localStorage is not set
+export const DEFAULT_SUPABASE_CONFIG = {
+  url: '',
+  anonKey: ''
+};
+
+export function getSupabaseCredentials(): { url: string; anonKey: string; isLockedGlobal: boolean } {
   const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env || {};
   const envUrl = metaEnv.VITE_SUPABASE_URL || '';
   const envKey = metaEnv.VITE_SUPABASE_ANON_KEY || '';
 
-  const storedUrl = localStorage.getItem(SUPABASE_STORAGE_URL_KEY) || envUrl;
-  const storedKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || envKey;
+  const storedUrl = localStorage.getItem(SUPABASE_STORAGE_URL_KEY);
+  const storedKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY);
 
+  const effectiveUrl = (storedUrl || envUrl || DEFAULT_SUPABASE_CONFIG.url || '').trim();
+  const effectiveKey = (storedKey || envKey || DEFAULT_SUPABASE_CONFIG.anonKey || '').trim();
+
+  // If provided via VITE_ build variable or DEFAULT_SUPABASE_CONFIG without custom local overrides
+  const isLockedGlobal = Boolean((envUrl || DEFAULT_SUPABASE_CONFIG.url) && !storedUrl);
 
   return {
-    url: storedUrl.trim(),
-    anonKey: storedKey.trim()
+    url: effectiveUrl,
+    anonKey: effectiveKey,
+    isLockedGlobal
   };
+}
+
+export function resetToGlobalSupabaseCredentials() {
+  localStorage.removeItem(SUPABASE_STORAGE_URL_KEY);
+  localStorage.removeItem(SUPABASE_STORAGE_KEY_KEY);
+  cachedClient = null;
 }
 
 export function saveSupabaseCredentials(url: string, anonKey: string) {

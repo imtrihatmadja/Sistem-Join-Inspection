@@ -10,6 +10,7 @@ import {
 import {
   getSupabaseCredentials,
   saveSupabaseCredentials,
+  resetToGlobalSupabaseCredentials,
   testSupabaseConnection,
   syncVesselsToSupabase,
   syncInspectionsToSupabase,
@@ -63,6 +64,7 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
   // Supabase state
   const [supabaseUrl, setSupabaseUrl] = useState<string>('');
   const [supabaseKey, setSupabaseKey] = useState<string>('');
+  const [isLockedGlobal, setIsLockedGlobal] = useState<boolean>(false);
   const [isTestingSupabase, setIsTestingSupabase] = useState<boolean>(false);
   const [supabaseStatus, setSupabaseStatus] = useState<{
     tested: boolean;
@@ -83,13 +85,12 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
   // Active target vessel for modal upload
   const [targetVesselForUpload, setTargetVesselForUpload] = useState<Vessel | null>(null);
 
-  useEffect(() => {
-    loadEvidences();
+  const refreshCredentialsState = () => {
     const creds = getSupabaseCredentials();
     setSupabaseUrl(creds.url);
     setSupabaseKey(creds.anonKey);
+    setIsLockedGlobal(creds.isLockedGlobal);
 
-    // Initial silent connection check if url exists
     if (creds.url && creds.anonKey) {
       testSupabaseConnection(creds.url, creds.anonKey).then((res) => {
         setSupabaseStatus({
@@ -100,6 +101,11 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
         });
       });
     }
+  };
+
+  useEffect(() => {
+    loadEvidences();
+    refreshCredentialsState();
   }, []);
 
   const loadEvidences = () => {
@@ -530,6 +536,45 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
                   <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Semua Data'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Global Lock Information Card */}
+            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-start sm:items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-blue-950 flex items-center gap-2 flex-wrap">
+                    <span>Kunci Konfigurasi Global (Semua Gawai & Pengawas)</span>
+                    {isLockedGlobal ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
+                        🔒 Terkunci Otomatis (Global Preset)
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
+                        📱 Konfigurasi Lokal / Kustom
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-blue-800 mt-0.5">
+                    Kredensial Supabase dapat dikunci melalui GitHub Secrets (<code>VITE_SUPABASE_URL</code> & <code>VITE_SUPABASE_ANON_KEY</code>) atau preset sistem agar seluruh pengawas tidak perlu mengetik ulang kredensial di ponsel / tablet lapangan.
+                  </p>
+                </div>
+              </div>
+
+              {!isLockedGlobal && (
+                <button
+                  onClick={() => {
+                    resetToGlobalSupabaseCredentials();
+                    refreshCredentialsState();
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-blue-100 text-blue-700 border border-blue-300 text-xs font-bold shrink-0 self-start sm:self-auto cursor-pointer"
+                  title="Kembalikan ke konfigurasi environment bawaan sistem"
+                >
+                  Reset ke Kunci Global
+                </button>
+              )}
             </div>
 
             {/* Status Alert Banner */}

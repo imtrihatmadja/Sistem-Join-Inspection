@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Vessel": {
+      "title": "Vessel",
+      "description": "Profil identitas kapal perikanan dan status kepatuhan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "registrationNumber": { "type": "string", "maxLength": 60 },
+        "grossTonnage": { "type": "number" },
+        "callSign": { "type": "string", "maxLength": 50 },
+        "ownerName": { "type": "string", "maxLength": 100 },
+        "homePort": { "type": "string", "maxLength": 100 },
+        "gearType": { "type": "string", "maxLength": 100 },
+        "riskScore": { "type": "number" },
+        "riskLevel": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "totalInspections": { "type": "number" },
+        "lastInspectionDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "FLAGGED", "SUSPENDED", "CLEARED"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "registrationNumber", "homePort", "riskLevel"]
+    },
+    "Inspection": {
+      "title": "Inspection",
+      "description": "Data record inspeksi bersama ketenagakerjaan di pelabuhan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vesselId": { "type": "string" },
+        "vesselName": { "type": "string", "maxLength": 100 },
+        "inspectionDate": { "type": "string" },
+        "port": { "type": "string", "maxLength": 100 },
+        "inspectors": { "type": "string", "maxLength": 200 },
+        "leadAgency": { "type": "string", "maxLength": 100 },
+        "crewTotal": { "type": "number" },
+        "crewWithPkl": { "type": "number" },
+        "crewWithInsurance": { "type": "number" },
+        "crewWithBst": { "type": "number" },
+        "calculatedRiskScore": { "type": "number" },
+        "violationsCount": { "type": "number" },
+        "criticalViolations": { "type": "number" },
+        "recommendation": { "type": "string", "maxLength": 500 },
+        "followUpStatus": { "type": "string", "enum": ["PENDING", "IN_PROGRESS", "RESOLVED", "SANCTIONED"] },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["vesselId", "inspectionDate", "port"]
+    }
+  },
+  "firestore": {
+    "/vessels/{vesselId}": {
+      "schema": { "$ref": "#/entities/Vessel" },
+      "description": "Koleksi data profil kapal perikanan"
+    },
+    "/inspections/{inspectionId}": {
+      "schema": { "$ref": "#/entities/Inspection" },
+      "description": "Koleksi data record inspeksi ketenagakerjaan kapal"
+    }
+  }
+}

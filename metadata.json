@@ -1,0 +1,6 @@
+{
+  "name": "DFW Monev & Project Hub",
+  "description": "Sistem Database Inspeksi Bersama Ketenagakerjaan Kapal Perikanan dan Pemantauan Kepatuhan Dokumen Awak Kapal Real-Time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

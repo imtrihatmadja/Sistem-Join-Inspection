@@ -71,45 +71,55 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
   const [isCreatingVessel, setIsCreatingVessel] = useState<boolean>(false);
   const [quickVesselError, setQuickVesselError] = useState<string | null>(null);
 
-  // Form State initialized with standard blank checklist defaults (0/22 selected)
+  // Form State initialized with standard blank checklist defaults
   const [form, setForm] = useState<OfficialChecklistForm>({
     vesselName: '',
     callSign: '',
     sipiNumber: '',
+    grossTonnage: 0,
     homePort: '',
+    fishingGround: '',
+    gearType: '',
     ownerName: '',
+    ownerAddress: '',
+    captainName: '',
     agentName: '',
     hasWlkp: null,
-    inspectionDate: '',
+    inspectionDate: new Date().toISOString().split('T')[0],
     inspectionLocation: '',
     totalCrewCount: 0,
     hasMigrantCrew: false,
     migrantCrewCount: 0,
     hasForeignCrew: false,
     foreignCrewCount: 0,
-    captainName: '',
     captainNik: '',
     captainPhone: '',
     fisheryInspectorName: '',
     laborInspectorName: '',
 
-    // Section 2: PKL
+    // Section 2: PKL & Pengupahan
     hasPklAgreement: null,
     pklStandardFormat: null,
     pklHeldByCrew: null,
+    pklDurationMonths: '',
     pklWageScheme: '',
+    monthlyBasicWage: '',
+    profitSharingRatio: '',
+    overtimeOrBonusPay: '',
     minimumWageGuaranteed: null,
     hasSalarySlips: false,
     hasProductionSharingProof: false,
     hasWageDeductions: false,
     wageDeductionNotes: '',
 
-    // Section 3: Jaminan Sosial
+    // Section 3: Jaminan Sosial & Operasional Trip
     hasBpjsKetenagakerjaan: null,
     bpjsTkPrograms: [],
     hasBpjsKesehatan: false,
     bpjsHealthContributionPaid: false,
     hasPrivateInsurance: false,
+    fishingOperationsPerTrip: '',
+    dailyFishingOperationHours: '',
 
     // Section 4: Operasional & Jam Kerja
     fishingGearType: '',
@@ -119,17 +129,21 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     hasSufficientFoodSupply: false,
     hasAdequateAccommodation: false,
 
-    // Section 5: K3
+    // Section 5: K3 & Keselamatan Kerja
     hasPersonalProtectiveEquipment: false,
     hasLifeJacketsAvailable: false,
     lifeJacketCount: 0,
     hasFireExtinguisherApar: false,
     hasFirstAidKit: false,
     hasAccidentLog: false,
+    accidentConditions: '',
+    accidentHistoryDetails: '',
 
     // Section 6: Magang
     hasApprenticeOrStudents: null,
     apprenticeCount: 0,
+    apprenticeMajor: '',
+    apprenticeSchoolOrigin: '',
     apprenticeHasContract: false,
     apprenticeUnderAge: false,
 
@@ -166,14 +180,19 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       setForm((prev) => ({
         ...prev,
         vesselName: initialVessel.name,
+        grossTonnage: initialVessel.grossTonnage || 0,
         callSign: initialVessel.callSign || '',
         sipiNumber: initialVessel.registrationNumber,
         homePort: initialVessel.homePort,
+        fishingGround: initialVessel.fishingGround || prev.fishingGround || 'WPPNRI 711 / Laut Natuna',
+        gearType: initialVessel.gearType || prev.gearType,
+        fishingGearType: initialVessel.gearType || prev.fishingGearType,
         ownerName: initialVessel.ownerName,
+        ownerAddress: initialVessel.ownerAddress || prev.ownerAddress || '',
+        captainName: initialVessel.captainName || prev.captainName || '',
         agentName: initialVessel.agentName,
         inspectionLocation: initialVessel.homePort,
-        totalCrewCount: initialVessel.crewCapacity || 24,
-        fishingGearType: initialVessel.gearType || prev.fishingGearType
+        totalCrewCount: initialVessel.crewCapacity || 24
       }));
     } else if (vessels.length > 0 && !selectedVesselId) {
       const first = vessels[0];
@@ -181,14 +200,19 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       setForm((prev) => ({
         ...prev,
         vesselName: first.name,
+        grossTonnage: first.grossTonnage || 0,
         callSign: first.callSign || '',
         sipiNumber: first.registrationNumber,
         homePort: first.homePort,
+        fishingGround: first.fishingGround || prev.fishingGround || 'WPPNRI 711 / Laut Natuna',
+        gearType: first.gearType || prev.gearType,
+        fishingGearType: first.gearType || prev.fishingGearType,
         ownerName: first.ownerName,
+        ownerAddress: first.ownerAddress || prev.ownerAddress || '',
+        captainName: first.captainName || prev.captainName || '',
         agentName: first.agentName,
         inspectionLocation: first.homePort,
-        totalCrewCount: first.crewCapacity || 24,
-        fishingGearType: first.gearType || prev.fishingGearType
+        totalCrewCount: first.crewCapacity || 24
       }));
     }
   }, [initialVessel, vessels, isOpen]);
@@ -202,19 +226,24 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       setForm((prev) => ({
         ...prev,
         vesselName: v.name,
+        grossTonnage: v.grossTonnage || 0,
         callSign: v.callSign || '',
         sipiNumber: v.registrationNumber,
         homePort: v.homePort,
+        fishingGround: v.fishingGround || prev.fishingGround || 'WPPNRI 711 / Laut Natuna',
+        gearType: v.gearType || prev.gearType,
+        fishingGearType: v.gearType || prev.fishingGearType,
         ownerName: v.ownerName,
+        ownerAddress: v.ownerAddress || prev.ownerAddress || '',
+        captainName: v.captainName || prev.captainName || '',
         agentName: v.agentName,
         inspectionLocation: v.homePort,
-        totalCrewCount: v.crewCapacity || prev.totalCrewCount,
-        fishingGearType: v.gearType || prev.fishingGearType
+        totalCrewCount: v.crewCapacity || prev.totalCrewCount
       }));
     }
   };
 
-  // Live Risk Calculation derived from current checklist state (22 items proportional)
+  // Live Risk Calculation derived from current checklist state (14 indicators scored)
   const { violations, riskEvaluation, complianceRate, completedItemsCount, totalItemsCount } = calculateRiskFromOfficialChecklist(form);
 
   const handleQuickCreateVessel = async (e: React.FormEvent) => {
@@ -236,8 +265,11 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         grossTonnage: Number(newGrossTonnage) || 50,
         callSign: newCallSign.trim() || 'YDA-0000',
         ownerName: newOwnerName.trim() || 'Pemilik Kapal Terdaftar',
+        ownerAddress: form.ownerAddress || 'Pelabuhan Perikanan',
+        captainName: form.captainName || 'Nahkoda Terdaftar',
         agentName: newAgentName.trim() || 'Agen Maritim Terdaftar',
         homePort: newHomePort,
+        fishingGround: 'WPPNRI 711 / Laut Natuna',
         gearType: newGearType,
         crewCapacity: Number(newCrewCapacity) || 15,
         riskScore: 20,
@@ -261,14 +293,19 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       setForm((prev) => ({
         ...prev,
         vesselName: createdVessel.name,
+        grossTonnage: createdVessel.grossTonnage,
         callSign: createdVessel.callSign || '',
         sipiNumber: createdVessel.registrationNumber,
         homePort: createdVessel.homePort,
+        fishingGround: createdVessel.fishingGround || 'WPPNRI 711 / Laut Natuna',
+        gearType: createdVessel.gearType,
+        fishingGearType: createdVessel.gearType || prev.fishingGearType,
         ownerName: createdVessel.ownerName,
+        ownerAddress: createdVessel.ownerAddress || prev.ownerAddress || '',
+        captainName: createdVessel.captainName || prev.captainName || '',
         agentName: createdVessel.agentName,
         inspectionLocation: createdVessel.homePort,
-        totalCrewCount: createdVessel.crewCapacity || 20,
-        fishingGearType: createdVessel.gearType || prev.fishingGearType
+        totalCrewCount: createdVessel.crewCapacity || 20
       }));
 
       setIsQuickAddVesselOpen(false);
@@ -472,7 +509,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">I. DATA UMUM & IDENTITAS KAPAL</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 1 - 7</p>
+                  <p className="text-xs text-slate-500">Data Identitas, Perizinan, Kepemilikan & WLKP (Indikator 1 - 7)</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -489,18 +526,30 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">2. Tanda Selar / Call Sign</label>
+                    <label className="block font-semibold text-slate-700 mb-1">2. Ukuran Kapal (Satuan Gross Tonnage / GT)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.grossTonnage || ''}
+                      onChange={(e) => setForm({ ...form, grossTonnage: Number(e.target.value) })}
+                      placeholder="Contoh: 120"
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm font-mono bg-white text-slate-900 focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">3. Tanda Selar / Call Sign</label>
                     <input
                       type="text"
                       value={form.callSign}
                       onChange={(e) => setForm({ ...form, callSign: e.target.value })}
-                      placeholder="Contoh: YB-9201"
+                      placeholder="Contoh: YB-9201 / 2341/Bc"
                       className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm font-mono bg-white text-slate-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">3. Nomor SIPI / SIUP Kapal</label>
+                    <label className="block font-semibold text-slate-700 mb-1">4. Nomor SIPI / SIUP Kapal</label>
                     <input
                       type="text"
                       value={form.sipiNumber}
@@ -511,7 +560,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">4. Pelabuhan Pangkalan</label>
+                    <label className="block font-semibold text-slate-700 mb-1">5. Pelabuhan Pangkalan</label>
                     <input
                       type="text"
                       value={form.homePort}
@@ -522,29 +571,63 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">5. Nama Pemilik / Korporasi</label>
+                    <label className="block font-semibold text-slate-700 mb-1">6. Daerah Penangkapan Ikan (WPPNRI / Wilayah)</label>
                     <input
                       type="text"
-                      value={form.ownerName}
-                      onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
-                      placeholder="Nama pemilik / PT"
+                      value={form.fishingGround || ''}
+                      onChange={(e) => setForm({ ...form, fishingGround: e.target.value })}
+                      placeholder="Contoh: WPPNRI 711 / Laut Natuna"
                       className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">6. Nama Agen Operasional</label>
+                    <label className="block font-semibold text-slate-700 mb-1">7. Jenis Alat Tangkap (API)</label>
                     <input
                       type="text"
-                      value={form.agentName}
-                      onChange={(e) => setForm({ ...form, agentName: e.target.value })}
-                      placeholder="Nama agen perkapalan"
+                      value={form.gearType || form.fishingGearType || ''}
+                      onChange={(e) => setForm({ ...form, gearType: e.target.value, fishingGearType: e.target.value })}
+                      placeholder="Contoh: Purse Seine, Longline Tuna, Bouke Ami"
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">8. Nama Pemilik / Korporasi</label>
+                    <input
+                      type="text"
+                      value={form.ownerName}
+                      onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                      placeholder="Nama pemilik / PT perikanan"
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">9. Alamat Pemilik / Kantor Perusahaan</label>
+                    <input
+                      type="text"
+                      value={form.ownerAddress || ''}
+                      onChange={(e) => setForm({ ...form, ownerAddress: e.target.value })}
+                      placeholder="Alamat lengkap pemilik atau domisili kantor PT"
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">10. Nama Nahkoda / Tekong</label>
+                    <input
+                      type="text"
+                      value={form.captainName || ''}
+                      onChange={(e) => setForm({ ...form, captainName: e.target.value })}
+                      placeholder="Nama nahkoda / tekong kapal"
                       className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
                     />
                   </div>
 
                   <div className="sm:col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <label className="block font-semibold text-slate-800">7. Wajib Lapor Ketenagakerjaan (WLKP)</label>
+                    <label className="block font-semibold text-slate-800">11. Wajib Lapor Ketenagakerjaan Perusahaan (WLKP)</label>
+                    <p className="text-[11px] text-slate-500">Kewajiban pelaporan ketenagakerjaan secara daring / resmi ke Kemnaker</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <label className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${form.hasWlkp === true ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200 text-slate-700'}`}>
                         <input
@@ -577,7 +660,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">II. PERJANJIAN KERJA LAUT (PKL) & PENGUPAHAN</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 8 - 11</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 8 - 11</p>
                 </div>
 
                 <div className="space-y-3.5 text-xs">
@@ -606,6 +689,21 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         <span>Tidak Ada PKL (Lisan / Ilegal)</span>
                       </label>
                     </div>
+
+                    {/* Jangka Waktu PKL */}
+                    <div className="pt-2 border-t border-slate-200">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Jangka Waktu PKL (Masa Berlaku Perjanjian):
+                      </label>
+                      <input
+                        type="text"
+                        value={form.pklDurationMonths || ''}
+                        onChange={(e) => setForm({ ...form, pklDurationMonths: e.target.value })}
+                        placeholder="Contoh: 12 Bulan / 1 Tahun / 1 Trip Melaut"
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
                     <div className="pt-1">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Catatan Pemeriksa (Indikator No. 8 - Kepemilikan PKL):
@@ -681,6 +779,53 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         </label>
                       ))}
                     </div>
+
+                    {/* Conditional Input: Besaran Upah Bulanan */}
+                    {(form.pklWageScheme === 'BULANAN' || form.pklWageScheme === 'KOMBINASI') && (
+                      <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded-lg">
+                        <label className="block text-[11px] font-semibold text-blue-900 mb-1">
+                          a. Besaran Gaji Pokok Bulanan:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.monthlyBasicWage || ''}
+                          onChange={(e) => setForm({ ...form, monthlyBasicWage: e.target.value })}
+                          placeholder="Contoh: Rp 3.500.000 / bulan"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+
+                    {/* Conditional Input: Besaran Bagi Hasil */}
+                    {(form.pklWageScheme === 'BAGI_HASIL' || form.pklWageScheme === 'KOMBINASI') && (
+                      <div className="p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg">
+                        <label className="block text-[11px] font-semibold text-amber-900 mb-1">
+                          b. Besaran / Rasio Bagi Hasil:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.profitSharingRatio || ''}
+                          onChange={(e) => setForm({ ...form, profitSharingRatio: e.target.value })}
+                          placeholder="Contoh: 50% Pemilik : 50% ABK / 1 bagian ABK per trip"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+
+                    {/* Form isian Upah Lembur / Premi */}
+                    <div className="p-2.5 bg-slate-100/70 border border-slate-200 rounded-lg">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        c. Upah Lembur / Premi Penangkapan:
+                      </label>
+                      <input
+                        type="text"
+                        value={form.overtimeOrBonusPay || ''}
+                        onChange={(e) => setForm({ ...form, overtimeOrBonusPay: e.target.value })}
+                        placeholder="Contoh: Bonus target Rp 500/kg atau lembur Rp 25.000/jam"
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
                     <div className="pt-1">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Catatan Pemeriksa (Indikator No. 10 - Skema Pengupahan):
@@ -740,7 +885,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">III. JAMINAN SOSIAL KETENAGAKERJAAN & KESEHATAN</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 12 - 13</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 12 - 13 & Parameter Operasional</p>
                 </div>
 
                 <div className="space-y-3.5 text-xs">
@@ -849,6 +994,37 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Tambahan Data Operasional Alat Tangkap */}
+                  <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-3">
+                    <div className="font-semibold text-blue-900">Operasional Penggunaan Alat Penangkapan Ikan (API)</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          a. Jumlah Pengoperasian Alat Tangkap per Trip
+                        </label>
+                        <input
+                          type="text"
+                          value={form.fishingOperationsPerTrip || ''}
+                          onChange={(e) => setForm({ ...form, fishingOperationsPerTrip: e.target.value })}
+                          placeholder="Contoh: 15 - 20 kali setting / hauling"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          b. Lama Pengoperasian Alat Tangkap per Hari (Jam)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.dailyFishingOperationHours || ''}
+                          onChange={(e) => setForm({ ...form, dailyFishingOperationHours: e.target.value })}
+                          placeholder="Contoh: 8 - 12 jam / hari"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -858,7 +1034,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 14 - 16</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 14 - 16</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -867,7 +1043,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                     <input
                       type="text"
                       value={form.fishingGearType}
-                      onChange={(e) => setForm({ ...form, fishingGearType: e.target.value })}
+                      onChange={(e) => setForm({ ...form, fishingGearType: e.target.value, gearType: e.target.value })}
                       placeholder="Contoh: Pursein, Rawai Tuna, Jaring Insang"
                       className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
                     />
@@ -950,7 +1126,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 17 - 20</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 17 - 20</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -1052,6 +1228,35 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         <p className="text-[11px] font-normal text-slate-500">Mencatat insiden medis / kecelakaan di laut</p>
                       </div>
                     </label>
+
+                    {/* Kondisi Kecelakaan & Kasus Kecelakaan Form Fields */}
+                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Kondisi Kecelakaan Kerja / Potensi Bahaya:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.accidentConditions || ''}
+                          onChange={(e) => setForm({ ...form, accidentConditions: e.target.value })}
+                          placeholder="Contoh: Terpeleset di geladak basah, tertimpa jaring, kabel putus"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Kasus Kecelakaan yang Pernah Terjadi:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.accidentHistoryDetails || ''}
+                          onChange={(e) => setForm({ ...form, accidentHistoryDetails: e.target.value })}
+                          placeholder="Contoh: 1 kasus luka ringan di trip sebelumnya, nihil kasus fatal"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Catatan Pemeriksa (Indikator No. 20 - Logbook Kecelakaan):
@@ -1074,7 +1279,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">VI. FASILITASI MAGANG & LARANGAN PEKERJA ANAK</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 21</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 21</p>
                 </div>
 
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs">
@@ -1085,7 +1290,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         type="radio"
                         name="hasMagang"
                         checked={form.hasApprenticeOrStudents === false}
-                        onChange={() => setForm({ ...form, hasApprenticeOrStudents: false, apprenticeCount: 0 })}
+                        onChange={() => setForm({ ...form, hasApprenticeOrStudents: false, apprenticeCount: 0, apprenticeMajor: '', apprenticeSchoolOrigin: '' })}
                         className="w-4 h-4 text-blue-600"
                       />
                       <span>Tidak Ada Siswa Magang</span>
@@ -1115,7 +1320,30 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                           className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
                         />
                       </div>
-                      <div className="space-y-2 pt-1">
+
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Jurusan Siswa Magang</label>
+                        <input
+                          type="text"
+                          value={form.apprenticeMajor || ''}
+                          onChange={(e) => setForm({ ...form, apprenticeMajor: e.target.value })}
+                          placeholder="Contoh: NKPI (Nautika) / TKPI (Teknika)"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block font-semibold text-slate-700 mb-1">Asal Sekolah / Kampus Magang</label>
+                        <input
+                          type="text"
+                          value={form.apprenticeSchoolOrigin || ''}
+                          onChange={(e) => setForm({ ...form, apprenticeSchoolOrigin: e.target.value })}
+                          placeholder="Contoh: SUPM Tegal / SMK Perikanan Negeri / Politeknik AUP"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2 space-y-2 pt-1">
                         <label className="flex items-center gap-2">
                           <input
                             type="checkbox"

@@ -27,126 +27,133 @@ export interface InspectionViolation {
 // -------------------------------------------------------------
 
 export interface OfficialChecklistForm {
-  // I. DATA UMUM & IDENTITAS KAPAL
-  inspectionDate?: string; // 1. Tanggal pengawasan bersama
-  inspectionLocation?: string; // 2. Lokasi Pengawasan Bersama (Pelabuhan / WPP)
-  vesselName?: string; // 3. Nama Kapal
-  callSign?: string;
-  sipiNumber?: string;
+  // I. DATA UMUM & IDENTITAS KAPAL (Hanya No. 7 WLKP yang dihitung dalam penilaian skor)
+  inspectionDate?: string; // Tanggal pengawasan bersama
+  inspectionLocation?: string; // Lokasi Pengawasan Bersama (Pelabuhan / WPP)
+  vesselName?: string; // 1. Nama Kapal Perikanan
+  grossTonnage?: number; // 2. Ukuran Kapal Satuan GT
+  callSign?: string; // 3. Tanda Selar / Call Sign
+  tandaSelar?: string;
+  sipiNumber?: string; // 4. Nomor SIPI / SIUP Kapal
   registrationNumber?: string;
-  homePort?: string; // 4. Pelabuhan Pangkalan
-  tandaSelar?: string; // 5. Tanda Selar
-  grossTonnage?: number; // 6. GT Kapal
-  ownerName?: string; // 7. Pemilik Kapal
-  ownerAddress?: string;
-  agentName?: string; // 8. Nama Agen Operasional
-  hasWlkp?: boolean | null; // 9. Wajib Lapor Ketenagakerjaan (WLKP)
+  homePort?: string; // 5. Pelabuhan Pangkalan
+  fishingGround?: string; // 6. Daerah Penangkapan Ikan (WPPNRI)
+  fishingGearType?: string; // 7. Jenis Alat Tangkap
+  gearType?: string;
+  ownerName?: string; // 8. Nama Pemilik / Korporasi
+  ownerAddress?: string; // 9. Alamat Pemilik
+  captainName?: string; // 10. Nama Nahkoda / Tekong (menggantikan Agen Operasional)
+  agentName?: string; // Data historis agen jika ada
+  
+  // Penilaian Kepatuhan Bagian I:
+  hasWlkp?: boolean | null; // 7 (Indikator Kepatuhan). Wajib Lapor Ketenagakerjaan (WLKP)
   wlkpStatus?: 'ADA' | 'TIDAK_ADA' | 'PROSES';
   wlkpNumber?: string;
-  captainName?: string; // 10. Nama Nakhoda/Tekong
-  crewListStatus?: 'LENGKAP' | 'SEBAGIAN' | 'TIDAK_ADA'; // 11. Daftar AKP
-  totalCrewCount?: number; // 12. Jumlah Awak Kapal
+
+  // Data Awak Kapal
+  crewListStatus?: 'LENGKAP' | 'SEBAGIAN' | 'TIDAK_ADA';
+  totalCrewCount?: number;
   crewMaleCount?: number;
   crewFemaleCount?: number;
   hasMigrantCrew?: boolean;
   migrantCrewCount?: number;
   hasForeignCrew?: boolean;
   foreignCrewCount?: number;
-  fishingGearType?: string; // 13. Jenis Alat Tangkap
-  gearType?: string;
-  fishingGround?: string; // Daerah Penangkapan Ikan (WPP-NRI)
 
-  // II. PKL (PERJANJIAN KERJA LAUT) & PENGUPAHAN
-  hasPklAgreement?: boolean | null; // 14. Kepemilikan Dokumen PKL
+  // II. PERJANJIAN KERJA LAUT (PKL) & PENGUPAHAN
+  hasPklAgreement?: boolean | null; // 8. Kepemilikan Dokumen PKL oleh Awak Kapal
   pklStatus?: 'SEMUA_BER_PKL' | 'SEBAGIAN_BER_PKL' | 'TIDAK_ADA_PKL';
   crewWithPklCount?: number;
-  pklHeldByCrew?: boolean | null; // 15. Salinan PKL dipegang awak kapal
-  pklStandardFormat?: boolean | null; // 16. Format & durasi standar PKL
-  pklDuration?: string;
-  pklWageScheme?: 'BULANAN' | 'BAGI_HASIL' | 'KOMBINASI' | ''; // 17. Sistem pengupahan
+  pklDuration?: string; // Jangka Waktu PKL (setelah checklist no 8)
+  pklHeldByCrew?: boolean | null; // 9. Salinan PKL Dipegang Awak Kapal
+  pklStandardFormat?: boolean | null;
+  pklWageScheme?: 'BULANAN' | 'BAGI_HASIL' | 'KOMBINASI' | ''; // 10. Sistem Pengupahan Awak Kapal
   wageSystem?: 'BAGI_HASIL' | 'UPAH_BULANAN' | 'KOMBINASI';
-  wageAmount?: string;
-  profitSharingRatio?: string;
-  overtimeBonus?: string;
+  wageAmount?: string; // a. Besaran upah saat gaji pokok bulanan di klik
+  profitSharingRatio?: string; // b. Besaran bagi hasil apabila isian bagi hasil murni di isi
+  overtimeBonus?: string; // c. Form isian upah lembur / premi / insentif
   minimumWageGuaranteed?: boolean | null;
-  hasSalarySlips?: boolean; // 18. Slip Upah / rincian bagi hasil tertulis
+  hasSalarySlips?: boolean; // 11. Bukti Slip Upah / Perhitungan Bagi Hasil
   hasProductionSharingProof?: boolean;
-  hasWageDeductions?: boolean; // 19. Bebas potongan liar
+  hasWageDeductions?: boolean; // Bebas Pemotongan Upah Liar
   wageDeductionNotes?: string;
 
   // III. JAMINAN SOSIAL KETENAGAKERJAAN & KESEHATAN
-  hasBpjsKetenagakerjaan?: boolean | null; // 20. BPJS Ketenagakerjaan
+  hasBpjsKetenagakerjaan?: boolean | null; // 12. Kepesertaan BPJS Ketenagakerjaan
   bpjsTkProgram?: 'BPU_2_PROGRAM' | 'PU_3_PROGRAM' | 'PU_4_PROGRAM' | 'TIDAK_TERDAFTAR';
-  bpjsTkPrograms?: string[]; // 21. Program JKK / JKM / JHT
+  bpjsTkPrograms?: string[]; // JKK, JKM, JHT, JP
   crewWithBpjsTkCount?: number;
-  hasBpjsKesehatan?: boolean; // 22. BPJS Kesehatan / Asuransi
+  hasBpjsKesehatan?: boolean; // 13. BPJS Kesehatan / Asuransi Tambahan
   bpjsKesStatus?: 'AKTIF_SEMUA' | 'SEBAGIAN' | 'TIDAK_ADA';
   crewWithBpjsKesCount?: number;
   bpjsHealthContributionPaid?: boolean;
   hasPrivateInsurance?: boolean;
+  gearDeploymentsPerTrip?: number; // a. Jumlah pengoperasian alat tangkap per trip
+  gearOperatingHoursPerDay?: number; // b. Lama pengoperasian alat tangkap perhari (satuan jam)
 
   // IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS
-  daysAtSeaPerTrip?: number; // 23. Hari melaut per trip
+  daysAtSeaPerTrip?: number; // Estimasi hari melaut per trip
   apiOperationsPerTrip?: number;
   apiOperatingHoursPerDay?: number;
-  dailyRestHoursCompliant?: boolean; // 24. Standar Jam Istirahat (Min. 10 Jam/Hari)
+  dailyRestHoursCompliant?: boolean; // 14. Standar Jam Istirahat (Min. 10 Jam/Hari - ILO C188) & Fasilitas Layak
   restHoursPerDay?: number;
-  hasCleanWaterAccess?: boolean; // 25. Pasokan Air Bersih & Minum
-  hasSufficientFoodSupply?: boolean; // 26. Pasokan Makanan Cukup
-  hasAdequateAccommodation?: boolean; // 27. Ruang Tidur & Sanitasi Bersih
+  hasCleanWaterAccess?: boolean;
+  hasSufficientFoodSupply?: boolean;
+  hasAdequateAccommodation?: boolean;
 
-  // V. KESELAMATAN & KESEHATAN KERJA (K3)
-  hasLifeJacketsAvailable?: boolean; // 28. Lifejacket / Pelampung Sesuai Jumlah ABK
+  // V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM
+  hasLifeJacketsAvailable?: boolean; // 15. Lifejacket / Pelampung Sesuai Jumlah ABK (1:1)
   lifeJacketCount?: number;
   ppeTypesAvailable?: string[];
   ppeSetCount?: number;
   ppeAdequacy?: 'CUKUP' | 'KURANG' | 'TIDAK_ADA';
-  hasFireExtinguisherApar?: boolean; // 29. APAR Siap Pakai
-  hasFirstAidKit?: boolean; // 30. Kotak & Obat P3K
+  hasFireExtinguisherApar?: boolean; // 16. APAR Siap Pakai & Tidak Kadaluarsa
+  hasFirstAidKit?: boolean; // 17. Kotak & Obat P3K Maritim Lengkap
   firstAidAvailable?: 'LENGKAP' | 'KURANG_LENGKAP' | 'TIDAK_ADA';
-  hasAccidentLog?: boolean; // 31. Buku Log Insiden & Kecelakaan
-  hasPersonalProtectiveEquipment?: boolean; // 32. APD Kerja (Sepatu, Sarung Tangan, Helm)
+  hasAccidentLog?: boolean; // 18. Buku Log Pencatatan Kecelakaan Kerja
+  hasPersonalProtectiveEquipment?: boolean;
+  nearMissIncidentsPerTrip?: number; // a. Jumlah Kondisi hampir kecelakaan kerja per trip
+  workAccidentsPerTrip?: number; // b. Jumlah kasus kecelakaan kerja per trip
   crewHealthComplaints?: string;
   nearMissIncidents?: string;
-  workAccidentsPerTrip?: number;
 
-  // VI. FASILITASI MAGANG & PERLINDUNGAN ANAK
-  apprenticeUnderAge?: boolean; // 33. Bebas Pekerja Anak (<18 Tahun di Pekerjaan Berbahaya)
-  hasApprenticeOrStudents?: boolean | null; // 34. Fasilitasi Magang
+  // VI. FASILITASI MAGANG & LARANGAN PEKERJA ANAK
+  hasApprenticeOrStudents?: boolean | null; // 19. Fasilitasi Siswa Magang & Bebas Pekerja Anak
   apprenticeCount?: number;
   apprenticeHasContract?: boolean;
+  apprenticeUnderAge?: boolean; // Indikasi usia < 18 tahun di pekerjaan berbahaya
+  internMajor?: string; // 1. Jurusan / Program Studi Magang
+  internSchoolOrigin?: string; // 2. Asal Sekolah / Perguruan Tinggi Siswa Magang
   hasInternship?: boolean;
   internCount?: number;
-  internMajor?: string;
   internHasPpeAndInsurance?: boolean;
-  internSchoolOrigin?: string;
 
-  // VII. BUKTI KOMPETENSI AWAK KAPAL
-  crewWithBstCount?: number; // 35. Sertifikat Keselamatan Dasar BST-F
-  crewWithSeamanBookCount?: number; // 36. Buku Pelaut (Seaman Book) Resmi
+  // VII. BUKTI KOMPETENSI AWAK KAPAL PERIKANAN (AKP)
+  crewWithBstCount?: number; // 20. Sertifikat BST-F
+  crewWithSeamanBookCount?: number; // Buku Pelaut (Seaman Book) Resmi
   competenciesAvailable?: string[];
 
   // VIII. INTEGRITAS & RED FLAGS KERJA PAKSA
-  identityHoldFlag?: boolean; // 37. Bebas Penahanan Dokumen Asli ABK
+  identityHoldFlag?: boolean; // Bebas Penahanan Dokumen Asli ABK
   arbitraryDeductionFlag?: boolean;
   additionalNotes?: string;
 
-  // Catatan Khusus Pemeriksa per Indikator (Field Findings & Observations)
-  noteIndicator8?: string; // Catatan No. 8 (Kepemilikan PKL)
-  noteIndicator9?: string; // Catatan No. 9 (Salinan PKL)
-  noteIndicator10?: string; // Catatan No. 10 (Sistem Pengupahan)
-  noteIndicator11?: string; // Catatan No. 11 (Slip Upah & Potongan)
-  noteIndicator12?: string; // Catatan No. 12 (BPJS Ketenagakerjaan)
-  noteIndicator13?: string; // Catatan No. 13 (BPJS Kesehatan / Asuransi)
-  noteIndicator16?: string; // Catatan No. 16 (Fasilitas & Jam Istirahat)
-  noteIndicator17?: string; // Catatan No. 17 (Lifejacket / Pelampung)
-  noteIndicator18?: string; // Catatan No. 18 (APAR)
-  noteIndicator19?: string; // Catatan No. 19 (Kotak & Obat P3K)
-  noteIndicator20?: string; // Catatan No. 20 (Buku Log Kecelakaan Kerja)
-  noteIndicator21?: string; // Catatan No. 21 (Fasilitasi Magang & Anak)
-  noteIndicator22?: string; // Catatan No. 22 (Bukti Kompetensi AKP)
+  // Catatan Khusus Pemeriksa per Indikator
+  noteIndicator8?: string;
+  noteIndicator9?: string;
+  noteIndicator10?: string;
+  noteIndicator11?: string;
+  noteIndicator12?: string;
+  noteIndicator13?: string;
+  noteIndicator16?: string;
+  noteIndicator17?: string;
+  noteIndicator18?: string;
+  noteIndicator19?: string;
+  noteIndicator20?: string;
+  noteIndicator21?: string;
+  noteIndicator22?: string;
 
-  // Tanda Tangan / Verifikasi
+  // Tanda Tangan & Pengesahan
   captainNik?: string;
   captainPhone?: string;
   fisheryInspectorName?: string;
@@ -208,8 +215,11 @@ export interface Vessel {
   grossTonnage: number; // GT
   callSign: string;
   ownerName: string;
-  agentName: string;
+  ownerAddress?: string; // Alamat Pemilik
+  captainName?: string; // Nama Nahkoda / Tekong
+  agentName?: string;
   homePort: string;
+  fishingGround?: string; // Daerah Penangkapan Ikan (WPPNRI)
   gearType: string; // Alat tangkap: Purse Seine, Longline, Gillnet, Bouke Ami, dll.
   crewCapacity: number;
   riskScore: number; // 0 - 100

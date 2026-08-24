@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { InspectionStats, Vessel } from '../types';
-import { ShieldAlert, ShieldCheck, AlertTriangle, FileText, Anchor, CheckCircle2, Clock, BarChart3, ChevronRight, ClipboardCheck, MapPin } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Anchor, ChevronRight, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react';
 import { RiskBadge } from './RiskBadge';
 
 interface DashboardStatsProps {
@@ -11,6 +11,8 @@ interface DashboardStatsProps {
   onOpenChecklist?: () => void;
 }
 
+type SortField = 'name' | 'gt' | 'port' | 'risk' | 'recommendation';
+
 export const DashboardStats: React.FC<DashboardStatsProps> = ({
   stats,
   vessels,
@@ -18,11 +20,57 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
   onFilterRisk,
   onOpenChecklist
 }) => {
+  const [sortField, setSortField] = useState<SortField>('risk');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const highRiskVessels = vessels.filter((v) => v.riskLevel === 'HIGH');
-  const recentInspectedVessels = [...vessels]
-    .filter(v => v.lastInspectionDate)
-    .sort((a, b) => new Date(b.lastInspectionDate || '').getTime() - new Date(a.lastInspectionDate || '').getTime())
-    .slice(0, 5);
+
+  // Filter ONLY vessels with MEDIUM and HIGH risk (exclude LOW risk)
+  const mediumAndHighRiskVessels = useMemo(() => {
+    return vessels.filter((v) => v.riskLevel === 'HIGH' || v.riskLevel === 'MEDIUM');
+  }, [vessels]);
+
+  // Sort vessels based on selected column
+  const sortedVessels = useMemo(() => {
+    const list = [...mediumAndHighRiskVessels];
+    return list.sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name, 'id', { sensitivity: 'base' });
+      } else if (sortField === 'gt') {
+        comparison = (a.grossTonnage || 0) - (b.grossTonnage || 0);
+      } else if (sortField === 'port') {
+        comparison = (a.homePort || '').localeCompare(b.homePort || '', 'id', { sensitivity: 'base' });
+      } else if (sortField === 'risk') {
+        comparison = (a.riskScore || 0) - (b.riskScore || 0);
+      } else if (sortField === 'recommendation') {
+        comparison = (a.lastRecommendation || '').localeCompare(b.lastRecommendation || '', 'id', { sensitivity: 'base' });
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [mediumAndHighRiskVessels, sortField, sortOrder]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      // Default to descending for risk and GT, ascending for text
+      setSortOrder(field === 'risk' || field === 'gt' ? 'desc' : 'asc');
+    }
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-60 group-hover:opacity-100 transition-opacity" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="w-3 h-3 text-blue-600 font-bold" />
+    ) : (
+      <ArrowDown className="w-3 h-3 text-blue-600 font-bold" />
+    );
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -122,85 +170,187 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
       {/* Main Grid: 8 Cols (Table Preview) + 4 Cols (Risk Summary) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
-        {/* Left 8 Cols: Inspeksi Terakhir */}
+        {/* Left 8 Cols: Kapal Berisiko Sedang & Tinggi (Scrollable with sorting) */}
         <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden shadow-xs">
           
-          <div className="px-4 py-3 sm:py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-              <Anchor className="w-4 h-4 text-blue-600" />
-              <span>Inspeksi Terakhir & Status Kepatuhan</span>
-            </h4>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
-              Update Real-Time
-            </span>
-          </div>
-
-          {/* Mobile list for recent inspections */}
-          <div className="block sm:hidden divide-y divide-slate-100">
-            {recentInspectedVessels.map((v) => (
-              <div
-                key={`mob-recent-${v.id}`}
-                onClick={() => onSelectVessel(v)}
-                className="p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer space-y-1.5"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="font-bold text-xs text-slate-900 truncate block">{v.name}</span>
-                    <span className="text-[10px] font-mono text-slate-400">{v.registrationNumber} • {v.homePort}</span>
-                  </div>
-                  <RiskBadge level={v.riskLevel} score={v.riskScore} size="sm" />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                  <span>{v.grossTonnage} GT • {v.gearType}</span>
-                  <span className="text-blue-600 font-semibold flex items-center gap-0.5">
-                    Detail <ChevronRight className="w-3 h-3" />
-                  </span>
-                </div>
+          <div className="px-4 py-3 sm:py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center">
+                <AlertTriangle className="w-3.5 h-3.5" />
               </div>
-            ))}
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Daftar Kapal Berisiko Sedang & Tinggi
+                </h4>
+                <p className="text-[10px] text-slate-500">
+                  Prioritas pemantauan kepatuhan & tindakan korektif
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                {sortedVessels.length} Kapal Perlu Atensi
+              </span>
+            </div>
           </div>
 
-          {/* Desktop table for recent inspections */}
-          <div className="hidden sm:block flex-1 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-white sticky top-0 text-[11px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Nama Kapal</th>
-                  <th className="px-4 py-3">GT & Alat Tangkap</th>
-                  <th className="px-4 py-3">Pelabuhan</th>
-                  <th className="px-4 py-3">Skor Risiko</th>
-                  <th className="px-4 py-3">Evaluasi / Tindakan</th>
-                </tr>
-              </thead>
-              <tbody className="text-xs divide-y divide-slate-50">
-                {recentInspectedVessels.map((v) => (
-                  <tr
-                    key={v.id}
-                    onClick={() => onSelectVessel(v)}
-                    className="hover:bg-slate-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 font-semibold text-slate-800">
-                      {v.name}
-                      <span className="block text-[10px] font-mono text-slate-400">
-                        {v.registrationNumber}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {v.grossTonnage} GT • {v.gearType}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {v.homePort}
-                    </td>
-                    <td className="px-4 py-3">
-                      <RiskBadge level={v.riskLevel} score={v.riskScore} size="sm" />
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 truncate max-w-xs">
-                      {v.lastRecommendation || 'Pemeriksaan rutin berkala'}
-                    </td>
+          {/* Mobile list for medium & high risk vessels (Scrollable) */}
+          <div className="block sm:hidden max-h-[380px] overflow-y-auto divide-y divide-slate-100 p-1">
+            {sortedVessels.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-bold text-slate-700">Tidak Ada Kapal Berisiko Sedang / Tinggi</p>
+                <p className="text-[11px] text-slate-400">Seluruh armada yang terdata saat ini berkategori patuh (risiko rendah).</p>
+              </div>
+            ) : (
+              sortedVessels.map((v) => (
+                <div
+                  key={`mob-risk-${v.id}`}
+                  onClick={() => onSelectVessel(v)}
+                  className="p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer space-y-1.5 rounded-lg"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-bold text-xs text-slate-900 truncate block">{v.name}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{v.registrationNumber} • {v.homePort}</span>
+                    </div>
+                    <RiskBadge level={v.riskLevel} score={v.riskScore} size="sm" />
+                  </div>
+                  <div className="text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100 line-clamp-2">
+                    {v.lastRecommendation || 'Pemeriksaan berkala / tindakan perbaikan'}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span>{v.grossTonnage} GT • {v.gearType}</span>
+                    <span className="text-blue-600 font-semibold flex items-center gap-0.5">
+                      Detail <ChevronRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table for medium & high risk vessels with Scrollable container and Sortable headers */}
+          <div className="hidden sm:block flex-1 max-h-[420px] overflow-y-auto overflow-x-auto">
+            {sortedVessels.length === 0 ? (
+              <div className="p-12 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <p className="text-sm font-bold text-slate-700">Tidak Ada Kapal Berisiko Sedang / Tinggi</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Seluruh armada yang terdaftar saat ini berada dalam kategori kepatuhan penuh (risiko rendah).
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 sticky top-0 z-10 text-[11px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider shadow-xs">
+                  <tr>
+                    {/* Sortable Header: Nama Kapal */}
+                    <th
+                      onClick={() => handleSort('name')}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+                      title="Klik untuk mengurutkan berdasarkan Nama Kapal"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={sortField === 'name' ? 'text-blue-600 font-extrabold' : ''}>Nama Kapal</span>
+                        {renderSortIcon('name')}
+                      </div>
+                    </th>
+
+                    {/* Sortable Header: GT & Alat Tangkap */}
+                    <th
+                      onClick={() => handleSort('gt')}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+                      title="Klik untuk mengurutkan berdasarkan Gross Tonnage (GT)"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={sortField === 'gt' ? 'text-blue-600 font-extrabold' : ''}>GT & Alat Tangkap</span>
+                        {renderSortIcon('gt')}
+                      </div>
+                    </th>
+
+                    {/* Sortable Header: Pelabuhan */}
+                    <th
+                      onClick={() => handleSort('port')}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+                      title="Klik untuk mengurutkan berdasarkan Pelabuhan Pangkalan"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={sortField === 'port' ? 'text-blue-600 font-extrabold' : ''}>Pelabuhan</span>
+                        {renderSortIcon('port')}
+                      </div>
+                    </th>
+
+                    {/* Sortable Header: Skor Risiko */}
+                    <th
+                      onClick={() => handleSort('risk')}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+                      title="Klik untuk mengurutkan berdasarkan Skor Risiko"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={sortField === 'risk' ? 'text-blue-600 font-extrabold' : ''}>Skor Risiko</span>
+                        {renderSortIcon('risk')}
+                      </div>
+                    </th>
+
+                    {/* Sortable Header: Evaluasi / Tindakan */}
+                    <th
+                      onClick={() => handleSort('recommendation')}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+                      title="Klik untuk mengurutkan berdasarkan Evaluasi / Tindakan"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={sortField === 'recommendation' ? 'text-blue-600 font-extrabold' : ''}>Evaluasi / Tindakan</span>
+                        {renderSortIcon('recommendation')}
+                      </div>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="text-xs divide-y divide-slate-100">
+                  {sortedVessels.map((v) => (
+                    <tr
+                      key={v.id}
+                      onClick={() => onSelectVessel(v)}
+                      className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3 font-semibold text-slate-800">
+                        <div className="flex items-center gap-1.5">
+                          <span>{v.name}</span>
+                        </div>
+                        <span className="block text-[10px] font-mono text-slate-400">
+                          {v.registrationNumber}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        <span className="font-semibold text-slate-800">{v.grossTonnage} GT</span>
+                        <span className="block text-[10px] text-slate-400">{v.gearType}</span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">
+                        {v.homePort}
+                      </td>
+                      <td className="px-4 py-3">
+                        <RiskBadge level={v.riskLevel} score={v.riskScore} size="sm" />
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 max-w-xs">
+                        <p className="line-clamp-2 text-[11px] leading-relaxed">
+                          {v.lastRecommendation || (v.riskLevel === 'HIGH' ? 'Rekomendasi Penundaan SPB & Pemanggilan Pemilik' : 'Penerbitan Nota Pemeriksaan Kepatuhan')}
+                        </p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Footer of Table */}
+          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+            <span>Menampilkan <strong>{sortedVessels.length}</strong> kapal berisiko sedang & tinggi</span>
+            <span className="text-[10px] text-slate-400 italic">Gunakan scroll untuk menavigasi daftar lengkap</span>
           </div>
         </div>
 

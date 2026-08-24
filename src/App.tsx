@@ -10,7 +10,7 @@ import {
   computeInspectionStats
 } from './services/vesselService';
 import { Vessel, InspectionRecord, InspectionStats } from './types';
-import { INDONESIAN_PORTS, INITIAL_VESSELS, INITIAL_INSPECTIONS } from './services/mockData';
+import { INDONESIAN_PORTS } from './constants/ports';
 
 import { Sidebar } from './components/Sidebar';
 import { TopNavbar } from './components/TopNavbar';
@@ -34,8 +34,8 @@ export default function App() {
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
 
   // Data states
-  const [vessels, setVessels] = useState<Vessel[]>(INITIAL_VESSELS);
-  const [inspections, setInspections] = useState<InspectionRecord[]>(INITIAL_INSPECTIONS);
+  const [vessels, setVessels] = useState<Vessel[]>([]);
+  const [inspections, setInspections] = useState<InspectionRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Modal states

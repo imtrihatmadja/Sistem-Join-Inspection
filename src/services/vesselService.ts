@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  getDocs,
   setDoc,
   updateDoc,
   onSnapshot,
@@ -10,7 +9,6 @@ import {
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase/config';
 import { InspectionRecord, Vessel, InspectionStats } from '../types';
-import { INITIAL_INSPECTIONS, INITIAL_VESSELS } from './mockData';
 import {
   saveSingleVesselToSupabase,
   saveSingleInspectionToSupabase,
@@ -128,7 +126,7 @@ function getLocalVessels(): Vessel[] {
   } catch (e) {
     console.error('Error reading local vessels', e);
   }
-  return INITIAL_VESSELS;
+  return [];
 }
 
 function saveLocalVessels(vessels: Vessel[]) {
@@ -146,7 +144,7 @@ function getLocalInspections(): InspectionRecord[] {
   } catch (e) {
     console.error('Error reading local inspections', e);
   }
-  return INITIAL_INSPECTIONS;
+  return [];
 }
 
 function saveLocalInspections(inspections: InspectionRecord[]) {
@@ -180,7 +178,7 @@ export function subscribeToVessels(
   let currentList = getLocalVessels();
   onUpdate(currentList);
 
-  // Attempt to fetch from Supabase (PostgreSQL) and merge into memory/local
+  // Attempt to fetch directly from Supabase (PostgreSQL) as single source of truth
   fetchVesselsFromSupabase().then(({ data: supaVessels }) => {
     if (supaVessels && supaVessels.length > 0) {
       const merged = mergeVessels(supaVessels, getLocalVessels());
@@ -199,13 +197,9 @@ export function subscribeToVessels(
       collectionRef,
       (snapshot) => {
         if (snapshot.empty) {
-          seedInitialDataIfEmpty().then((seeded) => {
-            if (seeded) {
-              const fresh = getLocalVessels();
-              onUpdate(fresh);
-              notifyVesselSubscribers(fresh);
-            }
-          });
+          // If Firestore is empty, maintain local / Supabase data
+          const fresh = getLocalVessels();
+          onUpdate(fresh);
           return;
         }
 
@@ -275,7 +269,7 @@ export function subscribeToInspections(
         if (snapshot.empty) {
           // If Firestore is empty, keep local/supabase data
           const current = getLocalInspections();
-          onUpdate(current.length > 0 ? current : INITIAL_INSPECTIONS);
+          onUpdate(current);
           return;
         }
 
@@ -329,21 +323,19 @@ export async function reloadAllDataFromSupabase(): Promise<{
       return { vesselsCount: 0, inspectionsCount: 0, error: vRes.error || iRes.error };
     }
 
-    if (vRes.data && vRes.data.length > 0) {
-      const mergedV = mergeVessels(vRes.data, getLocalVessels());
-      saveLocalVessels(mergedV);
-      notifyVesselSubscribers(mergedV);
-    }
+    const supaVessels = vRes.data || [];
+    const supaInspections = iRes.data || [];
 
-    if (iRes.data && iRes.data.length > 0) {
-      const mergedI = mergeInspections(iRes.data, getLocalInspections());
-      saveLocalInspections(mergedI);
-      notifyInspectionSubscribers(mergedI);
-    }
+    // Overwrite local cache with authoritative Supabase records
+    saveLocalVessels(supaVessels);
+    notifyVesselSubscribers(supaVessels);
+
+    saveLocalInspections(supaInspections);
+    notifyInspectionSubscribers(supaInspections);
 
     return {
-      vesselsCount: vRes.data?.length || 0,
-      inspectionsCount: iRes.data?.length || 0
+      vesselsCount: supaVessels.length,
+      inspectionsCount: supaInspections.length
     };
   } catch (err: any) {
     console.error('Error reloading data from Supabase:', err);
@@ -352,26 +344,6 @@ export async function reloadAllDataFromSupabase(): Promise<{
       inspectionsCount: 0,
       error: err?.message || 'Gagal memuat ulang data dari Supabase'
     };
-  }
-}
-
-export async function seedInitialDataIfEmpty(): Promise<boolean> {
-  try {
-    const vesselsSnap = await withTimeout(getDocs(collection(db, VESSELS_COLLECTION)), 3000);
-    if (!vesselsSnap.empty) return false;
-
-    // Seed Vessels
-    for (const v of INITIAL_VESSELS) {
-      await setDoc(doc(db, VESSELS_COLLECTION, v.id), v);
-    }
-    // Seed Inspections
-    for (const insp of INITIAL_INSPECTIONS) {
-      await setDoc(doc(db, INSPECTIONS_COLLECTION, insp.id), insp);
-    }
-    return true;
-  } catch (err) {
-    console.warn('Could not seed to Firestore (offline or unauthenticated):', err);
-    return false;
   }
 }
 
@@ -552,11 +524,11 @@ export function computeInspectionStats(vessels: Vessel[], inspections: Inspectio
   let totalCrew = 0;
   let totalWithPkl = 0;
   inspections.forEach(i => {
-    totalCrew += i.crewData.totalCrew || 0;
-    totalWithPkl += i.crewData.crewWithPkl || 0;
+    totalCrew += i.crewData?.totalCrew || 0;
+    totalWithPkl += i.crewData?.crewWithPkl || 0;
   });
 
-  const averageComplianceRate = totalCrew > 0 ? Math.round((totalWithPkl / totalCrew) * 100) : 74;
+  const averageComplianceRate = totalCrew > 0 ? Math.round((totalWithPkl / totalCrew) * 100) : (inspections.length > 0 ? 0 : 0);
   const pendingFollowUps = inspections.filter(i => i.followUpStatus === 'PENDING' || i.followUpStatus === 'IN_PROGRESS').length;
   
   const portsSet = new Set<string>();
@@ -571,6 +543,6 @@ export function computeInspectionStats(vessels: Vessel[], inspections: Inspectio
     lowRiskCount,
     averageComplianceRate,
     pendingFollowUps,
-    activePortsCount: Math.max(1, portsSet.size)
+    activePortsCount: Math.max(portsSet.size, 0)
   };
 }

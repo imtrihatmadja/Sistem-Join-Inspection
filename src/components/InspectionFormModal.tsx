@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Vessel, InspectionRecord, InspectionViolation, CrewComplianceData } from '../types';
 import { calculateVesselRisk, STANDARD_VIOLATIONS, getRiskColor } from '../services/riskEngine';
 import { X, ShieldCheck, ShieldAlert, AlertTriangle, Check, Plus, Trash2, HelpCircle, FileText, Info } from 'lucide-react';
-import { INDONESIAN_PORTS } from '../services/mockData';
+import { INDONESIAN_PORTS } from '../constants/ports';
 
 interface InspectionFormModalProps {
   isOpen: boolean;

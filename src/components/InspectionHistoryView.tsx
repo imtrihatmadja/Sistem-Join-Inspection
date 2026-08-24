@@ -112,7 +112,8 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
         ) : (
           filteredInspections.map((insp) => {
             const matchedVessel = vessels.find(v => v.id === insp.vesselId);
-            const crewPklCount = insp.crewData.crewWithPklCount ?? (insp.crewData.hasPklContracts ? insp.crewData.totalCrew : 0);
+            const totalCrew = insp.crewData?.totalCrew || 0;
+            const crewPklCount = (insp.crewData as any)?.crewWithPklCount ?? ((insp.crewData as any)?.crewWithPkl ?? (insp.crewData?.hasFairWageAgreement ? totalCrew : 0));
             return (
               <div
                 key={insp.id}
@@ -141,7 +142,7 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <RiskBadge level={insp.riskEvaluation.riskLevel} score={insp.riskEvaluation.score} size="sm" />
+                    <RiskBadge level={insp.riskEvaluation?.riskLevel || 'LOW'} score={insp.riskEvaluation?.score || 0} size="sm" />
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       insp.followUpStatus === 'RESOLVED'
                         ? 'bg-green-100 text-green-800'
@@ -159,9 +160,9 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
                     <span><strong>Tim:</strong> {insp.inspectors}</span>
                     <span>•</span>
-                    <span><strong>ABK Ber-PKL:</strong> {crewPklCount} / {insp.crewData.totalCrew}</span>
+                    <span><strong>ABK Ber-PKL:</strong> {crewPklCount} / {totalCrew}</span>
                     <span>•</span>
-                    <span><strong>Temuan:</strong> {insp.violations.length} catatan</span>
+                    <span><strong>Temuan:</strong> {insp.violations?.length || 0} catatan</span>
                     {insp.checklistData && (
                       <>
                         <span>•</span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Vessel } from '../types';
 import { X, Plus, Ship, Check } from 'lucide-react';
-import { INDONESIAN_PORTS } from '../services/mockData';
+import { INDONESIAN_PORTS } from '../constants/ports';
 
 interface AddVesselModalProps {
   isOpen: boolean;

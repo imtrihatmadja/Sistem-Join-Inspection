@@ -7,7 +7,7 @@ import {
   InspectionViolation
 } from '../types';
 import { calculateRiskFromOfficialChecklist } from '../services/riskEngine';
-import { INDONESIAN_PORTS } from '../services/mockData';
+import { INDONESIAN_PORTS } from '../constants/ports';
 import { RiskBadge } from './RiskBadge';
 import {
   X,
@@ -424,11 +424,15 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               onChange={(e) => handleVesselChange(e.target.value)}
               className="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 max-w-[140px] xs:max-w-[180px] sm:max-w-[220px] truncate"
             >
-              {vessels.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} ({v.grossTonnage} GT)
-                </option>
-              ))}
+              {vessels.length === 0 ? (
+                <option value="">-- Belum ada kapal terdaftar --</option>
+              ) : (
+                vessels.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} ({v.grossTonnage} GT)
+                  </option>
+                ))
+              )}
             </select>
 
             {/* Tombol Tambah / Daftarkan Kapal Baru */}

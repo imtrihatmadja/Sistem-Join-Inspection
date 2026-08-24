@@ -85,7 +85,110 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    const printElement = document.getElementById('printable-berita-acara');
+    if (!printElement) {
+      window.print();
+      return;
+    }
+
+    try {
+      // Create hidden iframe for dedicated and clean printing
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.visibility = 'hidden';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (!doc) {
+        window.print();
+        return;
+      }
+
+      // Collect all active stylesheets and Tailwind styles
+      const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+        .map(node => node.outerHTML)
+        .join('\n');
+
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html lang="id">
+          <head>
+            <title>Berita Acara Pengawasan - ${vessel?.name || 'Kapal'}</title>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            ${styleTags}
+            <style>
+              @page {
+                size: A4 portrait;
+                margin: 12mm 14mm;
+              }
+              body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              #printable-berita-acara {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                display: block !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              table {
+                page-break-inside: auto;
+                width: 100%;
+              }
+              tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+              }
+            </style>
+          </head>
+          <body>
+            <div style="padding: 4px 0;">
+              ${printElement.innerHTML}
+            </div>
+          </body>
+        </html>
+      `);
+      doc.close();
+
+      // Trigger browser print dialog after styles & images render
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          window.print();
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 3000);
+        }
+      }, 300);
+    } catch {
+      window.print();
+    }
   };
 
 
@@ -482,7 +585,29 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
               >
                 
                 {/* Official Letterhead (KOP Resmi) */}
-                <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1.5 print-avoid-break">
+                <div className="text-center pb-4 border-b-2 border-slate-900 space-y-2 print-avoid-break">
+                  {/* Logo Row KKP, Kemnaker, DFW Indonesia */}
+                  <div className="flex items-center justify-center gap-6 pb-1">
+                    <img
+                      src="https://lh3.googleusercontent.com/d/1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5"
+                      alt="Logo KKP"
+                      className="h-10 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                    <img
+                      src="https://lh3.googleusercontent.com/d/162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU"
+                      alt="Logo Kemnaker"
+                      className="h-10 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                    <img
+                      src="https://lh3.googleusercontent.com/d/1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP"
+                      alt="Logo DFW Indonesia"
+                      className="h-10 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+
                   <div className="text-[10px] sm:text-xs font-bold tracking-widest text-slate-700 uppercase">
                     KEMENTERIAN KELAUTAN DAN PERIKANAN • KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA
                   </div>

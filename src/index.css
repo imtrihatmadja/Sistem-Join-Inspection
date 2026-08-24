@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Sembunyikan elemen latar dan UI navigasi saat print */
+  nav, header, aside, .no-print, #navbar-container, #sidebar-container {
+    display: none !important;
+  }
+
+  /* Tampilkan area berita acara dengan ukuran penuh */
+  #printable-berita-acara {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: block !important;
+    z-index: 99999 !important;
+  }
+
+  /* Hindari pemotongan baris tabel dan kartu catatan di tengah halaman */
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+

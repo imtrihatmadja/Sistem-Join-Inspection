@@ -17,7 +17,17 @@ import {
   ClipboardCheck,
   HardDrive,
   Trash2,
-  Loader2
+  Loader2,
+  Building,
+  Award,
+  HeartPulse,
+  GraduationCap,
+  Users,
+  ShieldCheck,
+  Check,
+  MapPin,
+  Anchor,
+  FileCheck
 } from 'lucide-react';
 import { getRiskColor } from '../services/riskEngine';
 import { VesselEvidenceVault } from './VesselEvidenceVault';
@@ -48,6 +58,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
   const [evidences, setEvidences] = useState<VesselEvidence[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [selectedInspectionId, setSelectedInspectionId] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -61,6 +72,11 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
   const latestInspection = vesselInspections[0];
   const riskVisual = getRiskColor(vessel.riskLevel);
   const vesselEvidences = evidences.filter((e) => e.vesselId === vessel.id);
+
+  // Active inspection for print resume
+  const activePrintInspection = vesselInspections.find(i => i.id === selectedInspectionId) || latestInspection;
+  const checklist = activePrintInspection?.checklistData || vessel.latestChecklist;
+  const activeViolations = activePrintInspection?.violations || vesselInspections.flatMap(i => i.violations) || [];
 
   const handleStatusChange = async (inspectionId: string, status: InspectionRecord['followUpStatus']) => {
     setUpdatingId(inspectionId);
@@ -425,42 +441,522 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
 
           {/* TAB 4: Cetak Berita Acara */}
           {activeTab === 'print' && (
-            <div className="p-4 sm:p-6 bg-white rounded-xl border border-slate-300 shadow-xs space-y-4 sm:space-y-6 text-slate-900">
+            <div className="space-y-4 sm:space-y-6">
               
-              <div className="text-center pb-3 border-b-2 border-slate-800 space-y-1">
-                <div className="font-bold text-[10px] sm:text-xs uppercase tracking-widest text-slate-500">
-                  TIM PENGAWASAN BERSAMA KETENAGAKERJAAN KAPAL PERIKANAN
+              {/* Control & Switcher Bar (No Print) */}
+              <div className="no-print p-3 sm:p-4 bg-slate-100 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-slate-700">Pilih Rekam Riwayat Inspeksi:</span>
+                  <select
+                    value={selectedInspectionId || (latestInspection?.id || '')}
+                    onChange={(e) => setSelectedInspectionId(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                  >
+                    {vesselInspections.length === 0 ? (
+                      <option value="">Inspeksi Terkini (Draft / Data Terdaftar)</option>
+                    ) : (
+                      vesselInspections.map((insp, idx) => (
+                        <option key={insp.id} value={insp.id}>
+                          {idx === 0 ? '★ Terbaru: ' : ''}{insp.inspectionDate} - {insp.inspectionPort} ({insp.riskEvaluation.riskLevel} - {insp.riskEvaluation.score} Poin)
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 uppercase">
-                  LEMBAR RESUME PENGAWASAN KAPAL PERIKANAN
-                </h3>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrint}
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak Berita Acara (PDF / Print)</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <div className="py-1"><span className="text-slate-500">Nama Kapal:</span> <strong>{vessel.name}</strong></div>
-                  <div className="py-1"><span className="text-slate-500">No SIPI:</span> <strong>{vessel.registrationNumber}</strong></div>
-                  <div className="py-1"><span className="text-slate-500">Ukuran:</span> <strong>{vessel.grossTonnage} GT</strong></div>
+              {/* Printable Document Sheet Container */}
+              <div
+                id="printable-berita-acara"
+                className="p-5 sm:p-8 bg-white rounded-xl border border-slate-300 shadow-sm space-y-6 text-slate-900 print:border-none print:shadow-none print:p-0"
+              >
+                
+                {/* Official Letterhead (KOP Resmi) */}
+                <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1.5 print-avoid-break">
+                  <div className="text-[10px] sm:text-xs font-bold tracking-widest text-slate-700 uppercase">
+                    KEMENTERIAN KELAUTAN DAN PERIKANAN • KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase">
+                    TIM PENGAWASAN BERSAMA NORMA KETENAGAKERJAAN KAPAL PERIKANAN
+                  </div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-950 uppercase tracking-tight">
+                    BERITA ACARA & LEMBAR RESUME HASIL PENGAWASAN KAPAL PERIKANAN
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-sans">
+                    Berdasarkan Standar Konvensi ILO C188, UU No. 45/2009, PP No. 27/2021, dan Peraturan Menteri Terkait
+                  </p>
                 </div>
-                <div>
-                  <div className="py-1"><span className="text-slate-500">Pemilik:</span> <strong>{vessel.ownerName}</strong></div>
-                  <div className="py-1"><span className="text-slate-500">Pangkalan:</span> <strong>{vessel.homePort}</strong></div>
-                  <div className="py-1"><span className="text-slate-500">Skor Risiko:</span> <strong>{vessel.riskScore}/100 ({vessel.riskLevel})</strong></div>
+
+                {/* Bagian 1: Data Identitas & Legalitas Kapal */}
+                <div className="space-y-2.5 print-avoid-break">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md">
+                    <Ship className="w-3.5 h-3.5 text-slate-700" />
+                    <span>I. DATA IDENTITAS & PERIZINAN KAPAL PERIKANAN</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Nama Kapal:</span>
+                        <strong className="text-slate-900">{checklist?.vesselName || vessel.name}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Nomor SIPI / SIUP:</span>
+                        <strong className="font-mono text-slate-900">{checklist?.sipiNumber || vessel.registrationNumber}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Ukuran Kapal:</span>
+                        <strong>{checklist?.grossTonnage || vessel.grossTonnage} GT</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Tanda Selar / Call Sign:</span>
+                        <strong className="font-mono">{checklist?.callSign || vessel.callSign || '-'}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Pelabuhan Pangkalan:</span>
+                        <strong>{checklist?.homePort || vessel.homePort}</strong>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Pemilik / Korporasi:</span>
+                        <strong>{checklist?.ownerName || vessel.ownerName}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Nahkoda / Tekong:</span>
+                        <strong>{checklist?.captainName || vessel.captainName || '-'}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Jenis Alat Tangkap (API):</span>
+                        <strong>{checklist?.gearType || checklist?.fishingGearType || vessel.gearType}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">Daerah Tangkapan (WPP):</span>
+                        <strong>{checklist?.fishingGround || vessel.fishingGround || 'WPPNRI'}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Status WLKP Ketenagakerjaan:</span>
+                        <strong className={checklist?.hasWlkp ? 'text-emerald-700' : 'text-amber-700'}>
+                          {checklist?.hasWlkp ? 'Ada / Terdaftar' : checklist?.hasWlkp === false ? 'Belum Ada' : 'Dalam Verifikasi'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-300 text-xs">
-                <strong>Rekomendasi Terakhir:</strong> {vessel.lastRecommendation || 'Kapal dalam status kepatuhan standar.'}
-              </div>
+                {/* Bagian 2: Hasil Evaluasi Risiko & Rekomendasi Pengawas */}
+                <div className="space-y-2.5 print-avoid-break">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md">
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+                    <span>II. HASIL EVALUASI RISIKO & REKOMENDASI PENGAWAS</span>
+                  </div>
 
-              <div className="pt-4 flex justify-end">
-                <button
-                  onClick={handlePrint}
-                  className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Cetak Dokumen</span>
-                </button>
+                  <div className="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2.5 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                      <div>
+                        <span className="text-slate-500">Tingkat Risiko Kepatuhan:</span>
+                        <span className="ml-2 font-bold px-2.5 py-0.5 rounded text-xs inline-flex items-center gap-1 border border-slate-300">
+                          {activePrintInspection?.riskEvaluation.riskLevel || vessel.riskLevel} ({activePrintInspection?.riskEvaluation.score ?? vessel.riskScore}/100)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Tanggal Inspeksi:</span>
+                        <strong className="ml-1.5">{activePrintInspection?.inspectionDate || vessel.lastInspectionDate || '-'}</strong> di <strong>{activePrintInspection?.inspectionPort || vessel.lastInspectionPort || vessel.homePort}</strong>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="font-bold text-slate-700 block mb-0.5">Rekomendasi & Tindakan Pengawas:</span>
+                      <p className="p-2.5 bg-slate-50 rounded border border-slate-200 text-slate-900 font-medium">
+                        {activePrintInspection?.riskEvaluation.recommendation || vessel.lastRecommendation || 'Penerbitan Nota Pemeriksaan Kepatuhan I dengan Tenggat Perbaikan 14 Hari.'}
+                      </p>
+                    </div>
+
+                    {activePrintInspection?.officialNotes && (
+                      <div>
+                        <span className="font-bold text-slate-700 block mb-0.5">Catatan Resmi Petugas:</span>
+                        <p className="text-slate-600 italic">{activePrintInspection.officialNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bagian 3: DAFTAR TEMUAN PELANGGARAN LAPANGAN */}
+                <div className="space-y-2.5 print-avoid-break">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                      <span>III. DAFTAR TEMUAN PELANGGARAN LAPANGAN</span>
+                    </div>
+                    <span className="text-[11px] font-mono lowercase tracking-normal">
+                      ({activeViolations.length} butir pelanggaran aktif)
+                    </span>
+                  </div>
+
+                  {activeViolations.length === 0 ? (
+                    <div className="p-4 bg-emerald-50/60 rounded-lg border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span><strong>Nihil Temuan Pelanggaran Lapangan.</strong> Seluruh aspek kepatuhan norma ketenagakerjaan dan K3 berada dalam standar yang dipersyaratkan.</span>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100/90 text-slate-800 border-b border-slate-200">
+                            <th className="py-2 px-2.5 font-bold w-8 text-center">No</th>
+                            <th className="py-2 px-2.5 font-bold w-32">Kategori Norma</th>
+                            <th className="py-2 px-2.5 font-bold">Uraian Butir Pelanggaran</th>
+                            <th className="py-2 px-2.5 font-bold w-24 text-center">Bobot / Sifat</th>
+                            <th className="py-2 px-2.5 font-bold">Catatan Temuan & Rekomendasi Korektif</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {activeViolations.map((v, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="py-2 px-2.5 text-center font-mono font-bold text-slate-600">{idx + 1}</td>
+                              <td className="py-2 px-2.5 font-semibold text-slate-700">{v.categoryName || 'Ketenagakerjaan'}</td>
+                              <td className="py-2 px-2.5 font-bold text-rose-950">{v.title}</td>
+                              <td className="py-2 px-2.5 text-center">
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  v.severity === 'CRITICAL' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                                  v.severity === 'MODERATE' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                  'bg-slate-100 text-slate-800 border border-slate-200'
+                                }`}>
+                                  {v.severity} (+{v.scoreWeight})
+                                </span>
+                              </td>
+                              <td className="py-2 px-2.5 text-slate-800 text-[11px] leading-relaxed">
+                                {v.notes || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bagian 4: DAFTAR CATATAN CHECKLIST SESUAI INDIKATOR PENGAWASAN */}
+                <div className="space-y-2.5 print-avoid-break">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md">
+                    <div className="flex items-center gap-1.5">
+                      <ClipboardCheck className="w-3.5 h-3.5 text-blue-600" />
+                      <span>IV. DAFTAR LENGKAP CATATAN CHECKLIST PER INDIKATOR PENGAWASAN (I - VIII)</span>
+                    </div>
+                    <span className="text-[11px] font-sans font-normal text-slate-500 normal-case">
+                      Rekam Catatan Pemeriksa Lapangan
+                    </span>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 text-xs">
+                    
+                    {/* Indikator 8: PKL */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 8: Kepemilikan Dokumen Perjanjian Kerja Laut (PKL)
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasPklAgreement === true ? '✓ Ada PKL Tertulis Lengkap' : checklist?.hasPklAgreement === false ? '✗ Tidak Ada PKL' : 'Sebagian'}
+                          {checklist?.pklDurationMonths ? ` (${checklist.pklDurationMonths})` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator8 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 9: Salinan PKL */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 9: Salinan Asli PKL Dipegang oleh Awak Kapal
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.pklHeldByCrew === true ? '✓ Dipegang ABK' : checklist?.pklHeldByCrew === false ? '✗ Salinan Ditahan' : 'Belum Dicek'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator9 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 10: Skema Pengupahan */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 10: Sistem & Struktur Pengupahan Awak Kapal
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Skema: {checklist?.pklWageScheme === 'BULANAN' ? 'Gaji Pokok Bulanan' : checklist?.pklWageScheme === 'BAGI_HASIL' ? 'Bagi Hasil Murni' : checklist?.pklWageScheme === 'KOMBINASI' ? 'Kombinasi Gaji & Bagi Hasil' : '-'}
+                          {checklist?.monthlyBasicWage ? ` | Upah Pokok: ${checklist.monthlyBasicWage}` : ''}
+                          {checklist?.profitSharingRatio ? ` | Rasio Bagi Hasil: ${checklist.profitSharingRatio}` : ''}
+                          {checklist?.overtimeOrBonusPay ? ` | Lembur/Premi: ${checklist.overtimeOrBonusPay}` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator10 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 11: Jaminan Upah Minimum & Slip Gaji */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 11: Slip Gaji Resmi & Bebas Pemotongan Upah Liar
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Slip Upah: {checklist?.hasSalarySlips ? '✓ Ada Slip' : '✗ Tidak Ada'} | Potongan Upah: {checklist?.hasWageDeductions ? '✗ Ada Potongan Liar' : '✓ Bebas Potongan'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator11 || checklist?.wageDeductionNotes || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 12: BPJS Ketenagakerjaan */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 12: Kepesertaan BPJS Ketenagakerjaan Awak Kapal
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasBpjsKetenagakerjaan === true ? '✓ Terdaftar Aktif' : checklist?.hasBpjsKetenagakerjaan === false ? '✗ Tidak Terdaftar' : '-'}
+                          {checklist?.bpjsTkPrograms && checklist.bpjsTkPrograms.length > 0 ? ` (Program: ${checklist.bpjsTkPrograms.join(', ')})` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator12 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 13: BPJS Kesehatan & Asuransi Tambahan */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 13: BPJS Kesehatan / Asuransi Tambahan Maritim & Operasional API
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          BPJS Kes: {checklist?.hasBpjsKesehatan ? '✓ Aktif' : '✗ Belum'} | Asuransi Swasta: {checklist?.hasPrivateInsurance ? '✓ Ada' : '-'}
+                          {checklist?.fishingOperationsPerTrip ? ` | Operasi API: ${checklist.fishingOperationsPerTrip}` : ''}
+                          {checklist?.dailyFishingOperationHours ? ` | Durasi: ${checklist.dailyFishingOperationHours}` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator13 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 16: Standar Fasilitas & Jam Istirahat */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 16: Standar Fasilitas Hidup & Jam Istirahat (ILO C188)
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Istirahat Min 10 Jam: {checklist?.dailyRestHoursCompliant ? '✓ Terpenuhi' : '✗ Kurang'} | Air Bersih: {checklist?.hasCleanWaterAccess ? '✓' : '✗'} | Makanan: {checklist?.hasSufficientFoodSupply ? '✓' : '✗'} | Kamar Tidur: {checklist?.hasAdequateAccommodation ? '✓' : '✗'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator16 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 17: Lifejacket */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 17: Lifejacket / Pelampung Keselamatan Awak Kapal
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasLifeJacketsAvailable ? '✓ Tersedia Rasio 1:1' : '✗ Tidak Mencukupi'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator17 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 18: APAR */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 18: Alat Pemadam Api Ringan (APAR) Siap Pakai
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasFireExtinguisherApar ? '✓ Siap Pakai & Berlaku' : '✗ Kadaluarsa / Tidak Ada'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator18 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 19: Kotak P3K */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 19: Kotak & Obat-obatan P3K Maritim Lengkap
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasFirstAidKit ? '✓ Lengkap' : '✗ Kurang / Kadaluarsa'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator19 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 20: Buku Log Kecelakaan Kerja */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 20: Buku Log Pencatatan Kecelakaan & Rekam Insiden
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Buku Log: {checklist?.hasAccidentLog ? '✓ Ada Buku Log' : '✗ Tidak Ada'}
+                          {checklist?.accidentConditions ? ` | Kondisi: ${checklist.accidentConditions}` : ''}
+                          {checklist?.accidentHistoryDetails ? ` | Kasus: ${checklist.accidentHistoryDetails}` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator20 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 21: Magang & Pekerja Anak */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 21: Fasilitasi Siswa Magang & Larangan Pekerja Anak
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Magang: {checklist?.hasApprenticeOrStudents === true ? `✓ Ada (${checklist?.apprenticeCount || 1} Siswa)` : '✗ Tidak Ada'}
+                          {checklist?.apprenticeMajor ? ` | Jurusan: ${checklist.apprenticeMajor}` : ''}
+                          {checklist?.apprenticeSchoolOrigin ? ` | Sekolah: ${checklist.apprenticeSchoolOrigin}` : ''}
+                          {checklist?.apprenticeUnderAge ? ' | [PERINGATAN USIA ANAK]' : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator21 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 22: Kompetensi AKP */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 22: Bukti Sertifikat Kompetensi BST-F & Buku Pelaut
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Sertifikat BST-F: {checklist?.crewWithBstCount ?? '-'} ABK | Buku Pelaut: {checklist?.crewWithSeamanBookCount ?? '-'} ABK
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator22 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* Indikator 23: Catatan Khusus & Integritas Norma */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          Indikator No. 23: Integritas Norma & Bebas Penahanan Dokumen Asli ABK
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.identityHoldFlag ? '✗ TERINDIKASI PENAHANAN DOKUMEN' : '✓ Bebas Penahanan Dokumen'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Tambahan Khusus: </span>
+                        {checklist?.additionalNotes || <span className="text-slate-400 italic">Tidak ada catatan tambahan.</span>}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Bagian 5: Lembar Pengesahan & Tanda Tangan Para Pihak */}
+                <div className="pt-4 border-t border-slate-300 space-y-4 print-avoid-break text-xs">
+                  <div className="text-center text-[11px] text-slate-600 font-sans">
+                    Demikian Berita Acara Hasil Pengawasan Bersama ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-center text-xs">
+                    {/* Nakhoda */}
+                    <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-between min-h-[140px] bg-slate-50/40">
+                      <div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase">Pihak Kapal / Pengusaha</div>
+                        <div className="font-bold text-slate-900 mt-1">Nahkoda / Tekong Kapal</div>
+                      </div>
+                      <div className="pt-8">
+                        <div className="font-bold text-slate-900 underline">
+                          {checklist?.captainName || vessel.captainName || '(.............................................)'}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          {checklist?.captainNik ? `NIK: ${checklist.captainNik}` : 'Nahkoda / Kuasa Pemilik'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pengawas Perikanan KKP */}
+                    <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-between min-h-[140px] bg-slate-50/40">
+                      <div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase">Kementerian Kelautan & Perikanan</div>
+                        <div className="font-bold text-slate-900 mt-1">Pengawas Perikanan (KKP)</div>
+                      </div>
+                      <div className="pt-8">
+                        <div className="font-bold text-slate-900 underline">
+                          {checklist?.fisheryInspectorName || activePrintInspection?.inspectors || '(.............................................)'}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          {checklist?.fisheryInspectorNip ? `NIP: ${checklist.fisheryInspectorNip}` : 'Pengawas Perikanan / PSDKP'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pengawas Ketenagakerjaan Kemnaker */}
+                    <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-between min-h-[140px] bg-slate-50/40">
+                      <div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase">Kementerian Ketenagakerjaan</div>
+                        <div className="font-bold text-slate-900 mt-1">Pengawas Ketenagakerjaan</div>
+                      </div>
+                      <div className="pt-8">
+                        <div className="font-bold text-slate-900 underline">
+                          {checklist?.laborInspectorName || (currentUserEmail ? currentUserEmail.split('@')[0] : '(.............................................)')}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          {checklist?.laborInspectorNip ? `NIP: ${checklist.laborInspectorNip}` : 'Pengawas Norma Ketenagakerjaan'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
             </div>

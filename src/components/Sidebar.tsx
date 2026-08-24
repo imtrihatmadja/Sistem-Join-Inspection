@@ -65,16 +65,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold">
-              <Anchor className="w-5 h-5" />
+        <div className="p-4 border-b border-slate-800 space-y-3">
+          {/* 3 Logos Secara Horizontal: KKP, Kemnaker, DFW Indonesia */}
+          <div className="flex items-center justify-between gap-1.5 p-2 bg-white/95 rounded-lg border border-slate-700/60 shadow-xs">
+            <div className="flex-1 flex items-center justify-center h-8 px-1">
+              <img
+                src="https://lh3.googleusercontent.com/d/1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5"
+                alt="Logo KKP"
+                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                title="Kementerian Kelautan dan Perikanan"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5&sz=w200';
+                }}
+              />
+            </div>
+            <div className="w-px h-6 bg-slate-300 shrink-0"></div>
+            <div className="flex-1 flex items-center justify-center h-8 px-1">
+              <img
+                src="https://lh3.googleusercontent.com/d/162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU"
+                alt="Logo Kemnaker"
+                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                title="Kementerian Ketenagakerjaan"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU&sz=w200';
+                }}
+              />
+            </div>
+            <div className="w-px h-6 bg-slate-300 shrink-0"></div>
+            <div className="flex-1 flex items-center justify-center h-8 px-1">
+              <img
+                src="https://lh3.googleusercontent.com/d/1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP"
+                alt="Logo DFW Indonesia"
+                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                title="DFW Indonesia"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP&sz=w200';
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 pt-0.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold shrink-0">
+              <Anchor className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                Sistem Inpeksi Kapal
+              <h1 className="text-sm font-bold tracking-tight text-white leading-tight">
+                Sistem Inspeksi Kapal
               </h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold leading-tight">
                 Ketenagakerjaan Kapal Perikanan
               </p>
             </div>
@@ -100,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>📋 Isi Formulir Checklist</span>
           </button>
           <p className="text-[10px] text-slate-400 text-center leading-tight">
-            Standar Resmi Bersama ILO C188 / KKP / Kemnaker
+            Standar Bersama TIm Pemeriksaan Bersama Kementerian
           </p>
         </div>
 

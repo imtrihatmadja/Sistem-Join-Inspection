@@ -618,7 +618,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                     BERITA ACARA & LEMBAR RESUME HASIL PENGAWASAN KAPAL PERIKANAN
                   </h3>
                   <p className="text-[10px] text-slate-500 font-sans">
-                    Berdasarkan Standar Konvensi ILO C188, UU No. 45/2009, PP No. 27/2021, dan Peraturan Menteri Terkait
+                    Standar Bersama TIm Pemeriksaan Bersama Kementerian
                   </p>
                 </div>
 

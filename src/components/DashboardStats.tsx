@@ -91,7 +91,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5">
-              Standar Bersama ILO C188 / KKP / Kemnaker: Penilaian Risiko & Validasi Lapangan
+              Standar Bersama TIm Pemeriksaan Bersama Kementerian
             </p>
           </div>
         </div>

@@ -66,124 +66,20 @@ export const EVIDENCE_CATEGORIES: { value: EvidenceCategory; label: string; icon
   }
 ];
 
-// Initial Realistic Evidence Seed linked to Vessels
-export const INITIAL_EVIDENCES: VesselEvidence[] = [
-  {
-    id: 'EVID-001',
-    vesselId: 'VESSEL-001',
-    vesselName: 'KM. Samudera Makmur 08',
-    vesselRegistration: 'SIPI-2024-JKT-04921',
-    fileName: 'Foto_Akomodasi_Kamar_ABK_Sempit.jpg',
-    fileSize: 3450000,
-    fileSizeBytesFormatted: '3.45 MB',
-    mimeType: 'image/jpeg',
-    category: 'FOTO_AKOMODASI_ABK',
-    categoryLabel: 'Foto Kamar & Akomodasi ABK',
-    description: 'Kondisi tempat tidur bertingkat tanpa kasur standar, ventilasi tertutup barang logistik.',
-    driveFileId: '1AbCdEfGhIjKlMnOpQrStUvWxYz-001',
-    driveFolderName: '[KAPAL] KM. Samudera Makmur 08 (SIPI-2024-JKT-04921)',
-    webViewLink: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz-001/view',
-    thumbnailLink: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80',
-    uploadedBy: 'pengawas.nizam@kkp.go.id',
-    uploadedAt: '2025-02-14T10:45:00Z',
-    storageProvider: 'GOOGLE_DRIVE',
-    syncStatus: 'SYNCED'
-  },
-  {
-    id: 'EVID-002',
-    vesselId: 'VESSEL-001',
-    vesselName: 'KM. Samudera Makmur 08',
-    vesselRegistration: 'SIPI-2024-JKT-04921',
-    fileName: 'Draf_PKL_Tanpa_Bagi_Hasil_Jelas.pdf',
-    fileSize: 1820000,
-    fileSizeBytesFormatted: '1.82 MB',
-    mimeType: 'application/pdf',
-    category: 'DOKUMEN_PKL',
-    categoryLabel: 'Dokumen Perjanjian Kerja Laut (PKL)',
-    description: 'Scan klausul kontrak PKL yang mencantumkan potongan biaya operasional sepihak.',
-    driveFileId: '1AbCdEfGhIjKlMnOpQrStUvWxYz-002',
-    driveFolderName: '[KAPAL] KM. Samudera Makmur 08 (SIPI-2024-JKT-04921)',
-    webViewLink: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz-002/view',
-    uploadedBy: 'kemnaker.inspeksi@kemnaker.go.id',
-    uploadedAt: '2025-02-14T11:15:00Z',
-    storageProvider: 'GOOGLE_DRIVE',
-    syncStatus: 'SYNCED'
-  },
-  {
-    id: 'EVID-003',
-    vesselId: 'VESSEL-002',
-    vesselName: 'KM. Mina Jaya Perkasa 02',
-    vesselRegistration: 'SIPI-2024-BNO-01824',
-    fileName: 'Sertifikat_BST_F_Awak_Kapal_Lengkap.pdf',
-    fileSize: 4200000,
-    fileSizeBytesFormatted: '4.20 MB',
-    mimeType: 'application/pdf',
-    category: 'DOKUMEN_BUKU_PELAUT',
-    categoryLabel: 'Buku Pelaut & Sertifikat BST-F',
-    description: 'Bundel 18 sertifikat Basic Safety Training (BST-F) dan Buku Pelaut resmi.',
-    driveFileId: '1AbCdEfGhIjKlMnOpQrStUvWxYz-003',
-    driveFolderName: '[KAPAL] KM. Mina Jaya Perkasa 02 (SIPI-2024-BNO-01824)',
-    webViewLink: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz-003/view',
-    uploadedBy: 'ksop.benoa@dephub.go.id',
-    uploadedAt: '2025-02-17T14:30:00Z',
-    storageProvider: 'GOOGLE_DRIVE',
-    syncStatus: 'SYNCED'
-  },
-  {
-    id: 'EVID-004',
-    vesselId: 'VESSEL-002',
-    vesselName: 'KM. Mina Jaya Perkasa 02',
-    vesselRegistration: 'SIPI-2024-BNO-01824',
-    fileName: 'Foto_P3K_dan_Lifejacket_Standar_SOLAS.jpg',
-    fileSize: 2890000,
-    fileSizeBytesFormatted: '2.89 MB',
-    mimeType: 'image/jpeg',
-    category: 'FOTO_K3_APD',
-    categoryLabel: 'Bukti Fasilitas K3 & APD',
-    description: 'Rak penyimpanan lifejacket 25 unit dan kotak obat P3K tersegel lengkap.',
-    driveFileId: '1AbCdEfGhIjKlMnOpQrStUvWxYz-004',
-    driveFolderName: '[KAPAL] KM. Mina Jaya Perkasa 02 (SIPI-2024-BNO-01824)',
-    webViewLink: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz-004/view',
-    thumbnailLink: 'https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=600&auto=format&fit=crop&q=80',
-    uploadedBy: 'pengawas.benoa@kkp.go.id',
-    uploadedAt: '2025-02-17T14:45:00Z',
-    storageProvider: 'GOOGLE_DRIVE',
-    syncStatus: 'SYNCED'
-  },
-  {
-    id: 'EVID-005',
-    vesselId: 'VESSEL-003',
-    vesselName: 'KM. Bintang Timur Lestari',
-    vesselRegistration: 'SIPI-2023-BTG-08392',
-    fileName: 'Foto_Fasilitas_Dapur_Galley.jpg',
-    fileSize: 2150000,
-    fileSizeBytesFormatted: '2.15 MB',
-    mimeType: 'image/jpeg',
-    category: 'FASILITAS_DAPUR_AIR',
-    categoryLabel: 'Fasilitas Dapur & Sanitasi Air Bersih',
-    description: 'Dapur kapal bersih dengan penyimpanan bahan makanan tertutup dan filtrasi air minum.',
-    driveFileId: '1AbCdEfGhIjKlMnOpQrStUvWxYz-005',
-    driveFolderName: '[KAPAL] KM. Bintang Timur Lestari (SIPI-2023-BTG-08392)',
-    webViewLink: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz-005/view',
-    thumbnailLink: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80',
-    uploadedBy: 'pengawas.bitung@kkp.go.id',
-    uploadedAt: '2025-02-10T09:20:00Z',
-    storageProvider: 'GOOGLE_DRIVE',
-    syncStatus: 'SYNCED'
-  }
-];
+// Real Evidence storage (no dummy files)
+export const INITIAL_EVIDENCES: VesselEvidence[] = [];
 
 export function getStoredEvidences(): VesselEvidence[] {
   try {
     const raw = localStorage.getItem(EVIDENCE_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.error('Error loading evidences from local cache', e);
   }
-  return INITIAL_EVIDENCES;
+  return [];
 }
 
 export function saveStoredEvidences(evidences: VesselEvidence[]) {

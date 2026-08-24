@@ -161,7 +161,7 @@ function saveLocalInspections(inspections: InspectionRecord[]) {
 /**
  * Helper to prevent async network promises from hanging indefinitely
  */
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 2500): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
@@ -177,44 +177,71 @@ export function subscribeToVessels(
   // Register subscriber
   vesselSubscribers.add(onUpdate);
 
-  // Set initial local state immediately
-  let currentList = getLocalVessels();
+  // Set initial local state immediately from localStorage
+  const currentList = getLocalVessels();
   onUpdate(currentList);
 
-  // Attempt to fetch directly from Supabase (PostgreSQL) as single source of truth
+  // 1. Fetch from Supabase (PostgreSQL) and merge without dropping local items
   fetchVesselsFromSupabase().then(({ data: supaVessels }) => {
     if (supaVessels && supaVessels.length > 0) {
       const merged = mergeVessels(supaVessels, getLocalVessels());
       saveLocalVessels(merged);
       onUpdate(merged);
       notifyVesselSubscribers(merged);
+    } else {
+      // If Supabase is empty or newly connected, backfill existing local vessels to Supabase
+      const localVessels = getLocalVessels();
+      if (localVessels.length > 0) {
+        localVessels.forEach(v => {
+          saveSingleVesselToSupabase(v).catch(() => {});
+        });
+      }
     }
   }).catch((err) => {
     console.warn('Initial Supabase vessels fetch notice:', err);
   });
 
+  // 2. Real-time Firestore listener with automatic backfill
   let unsubFirestore = () => {};
   try {
     const collectionRef = collection(db, VESSELS_COLLECTION);
     unsubFirestore = onSnapshot(
       collectionRef,
       (snapshot) => {
+        const localList = getLocalVessels();
+        
         if (snapshot.empty) {
-          // If Firestore is empty, maintain local / Supabase data
-          const fresh = getLocalVessels();
-          onUpdate(fresh);
+          // If Firestore is empty on server, push existing local vessels to Firestore so they don't get lost
+          if (localList.length > 0) {
+            localList.forEach(v => {
+              const sanitized = sanitizeForFirestore(v);
+              setDoc(doc(db, VESSELS_COLLECTION, v.id), sanitized).catch((e) =>
+                console.warn('Backfill vessel to Firestore notice:', e)
+              );
+            });
+          }
+          onUpdate(localList);
           return;
         }
 
-        const list: Vessel[] = [];
+        const firestoreList: Vessel[] = [];
         snapshot.forEach((docSnap) => {
-          list.push({ ...docSnap.data(), id: docSnap.id } as Vessel);
+          firestoreList.push({ ...docSnap.data(), id: docSnap.id } as Vessel);
         });
         
-        // Merge with existing local/Supabase data so no Supabase-only record gets dropped
-        const merged = mergeVessels(list, getLocalVessels());
+        // Merge Firestore data with LocalStorage data (never lose local records)
+        const merged = mergeVessels(firestoreList, localList);
         saveLocalVessels(merged);
         notifyVesselSubscribers(merged);
+
+        // If local had records not in Firestore yet, sync them up
+        const firestoreIds = new Set(firestoreList.map(v => v.id));
+        localList.forEach(v => {
+          if (!firestoreIds.has(v.id)) {
+            const sanitized = sanitizeForFirestore(v);
+            setDoc(doc(db, VESSELS_COLLECTION, v.id), sanitized).catch(() => {});
+          }
+        });
       },
       (error) => {
         console.warn('Firestore subscription notice (using local/supabase storage fallback):', error);
@@ -249,18 +276,27 @@ export function subscribeToInspections(
   const initial = getLocalInspections();
   onUpdate(initial);
 
-  // Attempt to fetch from Supabase (PostgreSQL) and merge into memory/local
+  // 1. Fetch from Supabase (PostgreSQL) and merge
   fetchInspectionsFromSupabase().then(({ data: supaInspections }) => {
     if (supaInspections && supaInspections.length > 0) {
       const merged = mergeInspections(supaInspections, getLocalInspections());
       saveLocalInspections(merged);
       onUpdate(merged);
       notifyInspectionSubscribers(merged);
+    } else {
+      // If Supabase is empty, push existing local inspections to Supabase
+      const localInspections = getLocalInspections();
+      if (localInspections.length > 0) {
+        localInspections.forEach(i => {
+          saveSingleInspectionToSupabase(i).catch(() => {});
+        });
+      }
     }
   }).catch((err) => {
     console.warn('Initial Supabase inspections fetch notice:', err);
   });
 
+  // 2. Real-time Firestore listener with automatic backfill
   let unsubFirestore = () => {};
   try {
     const collectionRef = collection(db, INSPECTIONS_COLLECTION);
@@ -269,22 +305,40 @@ export function subscribeToInspections(
     unsubFirestore = onSnapshot(
       q,
       (snapshot) => {
+        const localList = getLocalInspections();
+
         if (snapshot.empty) {
-          // If Firestore is empty, keep local/supabase data
-          const current = getLocalInspections();
-          onUpdate(current);
+          // If Firestore is empty on server, push existing local inspections to Firestore
+          if (localList.length > 0) {
+            localList.forEach(i => {
+              const sanitized = sanitizeForFirestore(i);
+              setDoc(doc(db, INSPECTIONS_COLLECTION, i.id), sanitized).catch((e) =>
+                console.warn('Backfill inspection to Firestore notice:', e)
+              );
+            });
+          }
+          onUpdate(localList);
           return;
         }
 
-        const list: InspectionRecord[] = [];
+        const firestoreList: InspectionRecord[] = [];
         snapshot.forEach((docSnap) => {
-          list.push({ ...docSnap.data(), id: docSnap.id } as InspectionRecord);
+          firestoreList.push({ ...docSnap.data(), id: docSnap.id } as InspectionRecord);
         });
 
-        // Merge with existing local/Supabase data so no Supabase-only record gets dropped
-        const merged = mergeInspections(list, getLocalInspections());
+        // Merge Firestore records with local storage records
+        const merged = mergeInspections(firestoreList, localList);
         saveLocalInspections(merged);
         notifyInspectionSubscribers(merged);
+
+        // If local had records not in Firestore yet, sync them up
+        const firestoreIds = new Set(firestoreList.map(i => i.id));
+        localList.forEach(i => {
+          if (!firestoreIds.has(i.id)) {
+            const sanitized = sanitizeForFirestore(i);
+            setDoc(doc(db, INSPECTIONS_COLLECTION, i.id), sanitized).catch(() => {});
+          }
+        });
       },
       (error) => {
         console.warn('Firestore inspections subscription notice (using fallback):', error);

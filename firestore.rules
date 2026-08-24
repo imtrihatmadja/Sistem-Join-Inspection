@@ -3,31 +3,24 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     function isValidId(id) { 
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
-    }
-    
-    function isSignedIn() { 
-      return request.auth != null; 
+      return id is string && id.size() > 0 && id.size() <= 128; 
     }
 
     match /vessels/{vesselId} {
-      allow read: if true; // Allow port inspectors and observers to view registry
-      allow create, update: if isSignedIn() && isValidId(vesselId) 
-        && request.resource.data.name is string && request.resource.data.name.size() <= 100
-        && request.resource.data.registrationNumber is string && request.resource.data.registrationNumber.size() <= 60;
-      allow delete: if isSignedIn();
+      allow read: if true;
+      allow create, update: if isValidId(vesselId);
+      allow delete: if true;
     }
 
     match /inspections/{inspectionId} {
-      allow read: if true; // Allow real-time inspection log viewing
-      allow create: if isSignedIn() && isValidId(inspectionId)
-        && request.resource.data.vesselId is string && request.resource.data.vesselId.size() <= 128
-        && request.resource.data.port is string && request.resource.data.port.size() <= 100;
-      allow update, delete: if isSignedIn();
+      allow read: if true;
+      allow create, update: if isValidId(inspectionId);
+      allow delete: if true;
     }
 
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
+

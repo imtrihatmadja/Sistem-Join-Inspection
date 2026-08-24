@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Vessel, InspectionRecord, InspectionViolation, CrewComplianceData } from '../types';
 import { calculateVesselRisk, STANDARD_VIOLATIONS, getRiskColor } from '../services/riskEngine';
 import { X, ShieldCheck, ShieldAlert, AlertTriangle, Check, Plus, Trash2, HelpCircle, FileText, Info } from 'lucide-react';
-import { INDONESIAN_PORTS } from '../constants/ports';
+import { INDONESIAN_PORTS, PORT_GROUPS } from '../constants/ports';
 
 interface InspectionFormModalProps {
   isOpen: boolean;
@@ -248,12 +248,16 @@ export const InspectionFormModal: React.FC<InspectionFormModalProps> = ({
                 <select
                   value={inspectionPort}
                   onChange={(e) => setInspectionPort(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-teal-500 bg-white text-slate-800"
+                  className="w-full text-xs rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-teal-500 bg-white text-slate-800 font-medium"
                 >
-                  {INDONESIAN_PORTS.filter(p => p !== 'Semua Pelabuhan').map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
+                  {PORT_GROUPS.map((group) => (
+                    <optgroup key={group.categoryName} label={`📍 ${group.categoryName}`}>
+                      {group.ports.map((port) => (
+                        <option key={port} value={port}>
+                          {port}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

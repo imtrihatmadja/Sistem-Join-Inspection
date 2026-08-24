@@ -7,7 +7,7 @@ import {
   InspectionViolation
 } from '../types';
 import { calculateRiskFromOfficialChecklist } from '../services/riskEngine';
-import { INDONESIAN_PORTS } from '../constants/ports';
+import { INDONESIAN_PORTS, PORT_GROUPS, normalizePortName } from '../constants/ports';
 import { RiskBadge } from './RiskBadge';
 import {
   X,
@@ -393,9 +393,6 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                 <h2 className="text-xs sm:text-base font-bold tracking-tight truncate">
                   DAFTAR PERIKSA PENGAWASAN
                 </h2>
-                <span className="hidden md:inline-block px-2 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[10px] font-extrabold uppercase border border-blue-400/30 shrink-0">
-                  ILO C188 / KKP / Kemnaker
-                </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate">
                 Formulir Verifikasi Kepatuhan & Penilaian Risiko Awak Kapal
@@ -564,14 +561,63 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">5. Pelabuhan Pangkalan</label>
-                    <input
-                      type="text"
-                      value={form.homePort}
-                      onChange={(e) => setForm({ ...form, homePort: e.target.value })}
-                      placeholder="Contoh: PPS Nizam Zachman Jakarta"
-                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-slate-700 text-xs sm:text-sm">
+                        5. Pelabuhan Pangkalan
+                      </label>
+                      <span className="text-[10px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
+                        Standar Pelabuhan RI
+                      </span>
+                    </div>
+                    <select
+                      value={
+                        PORT_GROUPS.some(g => g.ports.includes(form.homePort))
+                          ? form.homePort
+                          : (form.homePort ? 'CUSTOM' : (PORT_GROUPS[0]?.ports[0] || 'PPS Nizam Zachman Jakarta'))
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          // Keep existing custom or initialize empty for manual entry
+                          if (PORT_GROUPS.some(g => g.ports.includes(form.homePort))) {
+                            setForm({ ...form, homePort: '' });
+                          }
+                        } else {
+                          setForm({ ...form, homePort: val, inspectionLocation: val });
+                        }
+                      }}
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900 font-medium focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="" disabled>-- Pilih Pelabuhan Pangkalan Resmi --</option>
+                      {PORT_GROUPS.map((group) => (
+                        <optgroup key={group.categoryName} label={`📍 ${group.categoryName}`}>
+                          {group.ports.map((port) => (
+                            <option key={port} value={port}>
+                              {port}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <optgroup label="⚙️ Opsi Lain">
+                        <option value="CUSTOM">-- Pelabuhan Lainnya (Tulis Manual) --</option>
+                      </optgroup>
+                    </select>
+
+                    {/* Manual input if port is custom */}
+                    {(!PORT_GROUPS.some(g => g.ports.includes(form.homePort)) || form.homePort === 'CUSTOM') && (
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          value={form.homePort === 'CUSTOM' ? '' : form.homePort}
+                          onChange={(e) => setForm({ ...form, homePort: e.target.value, inspectionLocation: e.target.value })}
+                          placeholder="Ketik nama pelabuhan perikanan lainnya..."
+                          className="w-full rounded-lg border border-blue-300 p-2 text-xs bg-blue-50/40 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Nama pelabuhan akan distandarisasi untuk pengelompokan Matriks Risiko.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>

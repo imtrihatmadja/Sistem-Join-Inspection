@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Vessel } from '../types';
 import { X, Plus, Ship, Check } from 'lucide-react';
-import { INDONESIAN_PORTS } from '../constants/ports';
+import { INDONESIAN_PORTS, PORT_GROUPS } from '../constants/ports';
 
 interface AddVesselModalProps {
   isOpen: boolean;
@@ -224,12 +224,16 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
               <select
                 value={homePort}
                 onChange={(e) => setHomePort(e.target.value)}
-                className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-900 focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-teal-500"
               >
-                {INDONESIAN_PORTS.filter(p => p !== 'Semua Pelabuhan').map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
+                {PORT_GROUPS.map((group) => (
+                  <optgroup key={group.categoryName} label={`📍 ${group.categoryName}`}>
+                    {group.ports.map((port) => (
+                      <option key={port} value={port}>
+                        {port}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

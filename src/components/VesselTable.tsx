@@ -3,6 +3,7 @@ import { Vessel, RiskLevel } from '../types';
 import { RiskBadge } from './RiskBadge';
 import { Search, ArrowUpDown, ChevronRight, Ship, ClipboardCheck, Trash2, Loader2, MapPin } from 'lucide-react';
 import { deleteVessel } from '../services/vesselService';
+import { normalizePortName } from '../constants/ports';
 
 interface VesselTableProps {
   vessels: Vessel[];
@@ -31,8 +32,16 @@ export const VesselTable: React.FC<VesselTableProps> = ({
   const filteredVessels = useMemo(() => {
     return vessels.filter((v) => {
       // Port filter
-      if (selectedPort !== 'Semua Pelabuhan' && !v.homePort.toLowerCase().includes(selectedPort.toLowerCase())) {
-        return false;
+      if (selectedPort !== 'Semua Pelabuhan') {
+        const normVesselPort = normalizePortName(v.homePort);
+        const normSelected = normalizePortName(selectedPort);
+        if (
+          normVesselPort.toLowerCase() !== normSelected.toLowerCase() &&
+          !v.homePort.toLowerCase().includes(selectedPort.toLowerCase()) &&
+          !selectedPort.toLowerCase().includes(v.homePort.toLowerCase())
+        ) {
+          return false;
+        }
       }
       // Risk filter
       if (riskFilter !== 'ALL' && v.riskLevel !== riskFilter) {

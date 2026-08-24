@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Vessel } from '../types';
 import { RiskBadge } from './RiskBadge';
 import { MapPin, Compass, ChevronRight } from 'lucide-react';
+import { normalizePortName } from '../constants/ports';
 
 interface RiskMatrixViewProps {
   vessels: Vessel[];
@@ -14,11 +15,11 @@ export const RiskMatrixView: React.FC<RiskMatrixViewProps> = ({
   onSelectVessel,
   onFilterPort
 }) => {
-  // Group vessels by Port
+  // Group vessels by Port with normalized naming
   const portGroups = useMemo(() => {
     const map = new Map<string, Vessel[]>();
     vessels.forEach((v) => {
-      const port = v.homePort || 'Pelabuhan Lainnya';
+      const port = normalizePortName(v.homePort);
       if (!map.has(port)) {
         map.set(port, []);
       }
@@ -92,15 +93,15 @@ export const RiskMatrixView: React.FC<RiskMatrixViewProps> = ({
             >
               {/* Port Card Header */}
               <div className="p-3.5 sm:p-4 border-b border-slate-100 bg-slate-50/70 flex items-start justify-between gap-2">
-                <div className="space-y-0.5 min-w-0">
+                <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-blue-600">
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate max-w-[180px] sm:max-w-[200px]" title={group.portName}>
+                    <MapPin className="w-4 h-4 shrink-0 text-blue-600 mt-0.5 self-start" />
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2" title={group.portName}>
                       {group.portName}
                     </h4>
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    {group.total} Kapal Terdaftar • Skor Rata-rata: <strong className="font-mono">{group.avgScore}</strong>
+                  <div className="text-[11px] text-slate-500 pl-5.5">
+                    {group.total} Kapal Terdaftar • Skor Rata-rata: <strong className="font-mono text-slate-700">{group.avgScore}</strong>
                   </div>
                 </div>
 

@@ -15,6 +15,7 @@ import {
   Database
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
+import { PORT_GROUPS } from '../constants/ports';
 
 interface SidebarProps {
   activeTab: 'dashboard' | 'vessels' | 'matrix' | 'history' | 'storage';
@@ -160,10 +161,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onChange={(e) => setSelectedPort(e.target.value)}
             className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-md p-1.5 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
           >
-            {ports.map((port) => (
-              <option key={port} value={port}>
-                {port}
-              </option>
+            <option value="Semua Pelabuhan">Semua Pelabuhan</option>
+            {PORT_GROUPS.map((group) => (
+              <optgroup key={group.categoryName} label={group.categoryName}>
+                {group.ports.map((port) => (
+                  <option key={port} value={port}>
+                    {port}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

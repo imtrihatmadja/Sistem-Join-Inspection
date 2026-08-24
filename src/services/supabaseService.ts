@@ -573,6 +573,47 @@ export async function fetchEvidencesFromSupabase(): Promise<{ data: VesselEviden
 }
 
 /**
+ * Delete a Vessel and its cascade relations from Supabase
+ */
+export async function deleteVesselFromSupabase(vesselId: string): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase client belum dikonfigurasi' };
+
+  try {
+    // Delete inspections first (if cascade is not enabled or for safe redundancy)
+    await client.from('inspections').delete().eq('vessel_id', vesselId);
+    await client.from('vessel_evidences').delete().eq('vessel_id', vesselId);
+
+    // Delete vessel
+    const { error } = await client.from('vessels').delete().eq('id', vesselId);
+    if (error) throw error;
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Delete vessel from Supabase error:', err);
+    return { success: false, error: err?.message || 'Gagal menghapus kapal dari Supabase' };
+  }
+}
+
+/**
+ * Delete an Inspection from Supabase
+ */
+export async function deleteInspectionFromSupabase(inspectionId: string): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase client belum dikonfigurasi' };
+
+  try {
+    const { error } = await client.from('inspections').delete().eq('id', inspectionId);
+    if (error) throw error;
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Delete inspection from Supabase error:', err);
+    return { success: false, error: err?.message || 'Gagal menghapus inspeksi dari Supabase' };
+  }
+}
+
+/**
  * Returns PostgreSQL DDL SQL Schema Script for Supabase
  */
 export function getCompleteSqlSchema(): string {

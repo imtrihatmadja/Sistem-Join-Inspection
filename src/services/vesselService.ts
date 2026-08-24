@@ -3,6 +3,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   query,
   orderBy
@@ -13,6 +14,8 @@ import {
   saveSingleVesselToSupabase,
   saveSingleInspectionToSupabase,
   updateInspectionStatusInSupabase,
+  deleteVesselFromSupabase,
+  deleteInspectionFromSupabase,
   fetchVesselsFromSupabase,
   fetchInspectionsFromSupabase
 } from './supabaseService';
@@ -511,6 +514,64 @@ export async function updateFollowUp(
     ).catch((err) => console.warn('Firestore update follow-up notice:', err));
   } catch (error) {
     console.warn('Firestore update follow-up skipped:', error);
+  }
+}
+
+/**
+ * Delete a Vessel: Immediately removes from local cache, dispatches to state,
+ * and deletes from Supabase and Firestore.
+ */
+export async function deleteVessel(vesselId: string): Promise<void> {
+  // 1. Immediately update local state
+  const currentVessels = getLocalVessels();
+  const updatedVessels = currentVessels.filter(v => v.id !== vesselId);
+  saveLocalVessels(updatedVessels);
+  notifyVesselSubscribers(updatedVessels);
+
+  // Also remove inspections for this vessel locally
+  const currentInspections = getLocalInspections();
+  const updatedInspections = currentInspections.filter(i => i.vesselId !== vesselId);
+  saveLocalInspections(updatedInspections);
+  notifyInspectionSubscribers(updatedInspections);
+
+  // 2. Delete from Supabase
+  try {
+    await deleteVesselFromSupabase(vesselId);
+  } catch (err) {
+    console.warn('Supabase vessel deletion catch:', err);
+  }
+
+  // 3. Delete from Firestore
+  try {
+    const vesselRef = doc(db, VESSELS_COLLECTION, vesselId);
+    withTimeout(deleteDoc(vesselRef), 3000).catch((e) => console.warn('Firestore vessel delete note:', e));
+  } catch (err) {
+    console.warn('Firestore vessel delete skipped:', err);
+  }
+}
+
+/**
+ * Delete an Inspection record
+ */
+export async function deleteInspection(inspectionId: string): Promise<void> {
+  const currentInspections = getLocalInspections();
+  const updatedInspections = currentInspections.filter(i => i.id !== inspectionId);
+  saveLocalInspections(updatedInspections);
+  notifyInspectionSubscribers(updatedInspections);
+
+  // Supabase delete
+  try {
+    await deleteInspectionFromSupabase(inspectionId);
+  } catch (err) {
+    console.warn('Supabase inspection deletion catch:', err);
+  }
+
+  // Firestore delete
+  try {
+    const inspRef = doc(db, INSPECTIONS_COLLECTION, inspectionId);
+    withTimeout(deleteDoc(inspRef), 3000).catch((e) => console.warn('Firestore inspection delete note:', e));
+  } catch (err) {
+    console.warn('Firestore inspection delete skipped:', err);
   }
 }
 

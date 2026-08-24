@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Vessel, RiskLevel } from '../types';
 import { RiskBadge } from './RiskBadge';
-import { Search, ArrowUpDown, ChevronRight, FilePlus, AlertCircle, Ship, ClipboardCheck, Anchor, MapPin } from 'lucide-react';
+import { Search, ArrowUpDown, ChevronRight, Ship, ClipboardCheck, Trash2, Loader2, MapPin } from 'lucide-react';
+import { deleteVessel } from '../services/vesselService';
 
 interface VesselTableProps {
   vessels: Vessel[];
   onSelectVessel: (vessel: Vessel) => void;
   onInspectVessel: (vessel: Vessel) => void;
   onOpenChecklist?: (vessel?: Vessel) => void;
+  onDeleteVessel?: (vessel: Vessel) => void;
   selectedPort: string;
 }
 
@@ -16,12 +18,15 @@ export const VesselTable: React.FC<VesselTableProps> = ({
   onSelectVessel,
   onInspectVessel,
   onOpenChecklist,
+  onDeleteVessel,
   selectedPort
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [riskFilter, setRiskFilter] = useState<'ALL' | RiskLevel>('ALL');
   const [sortBy, setSortBy] = useState<'risk' | 'date' | 'name' | 'gt'>('risk');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [vesselToDelete, setVesselToDelete] = useState<Vessel | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const filteredVessels = useMemo(() => {
     return vessels.filter((v) => {
@@ -342,6 +347,16 @@ export const VesselTable: React.FC<VesselTableProps> = ({
                       </button>
 
                       <button
+                        id={`btn-table-delete-${vessel.id}`}
+                        onClick={() => setVesselToDelete(vessel)}
+                        title="Hapus Kapal dari Database"
+                        className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Hapus</span>
+                      </button>
+
+                      <button
                         id={`btn-table-detail-${vessel.id}`}
                         onClick={() => onSelectVessel(vessel)}
                         title="Detail Kapal"
@@ -357,6 +372,72 @@ export const VesselTable: React.FC<VesselTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Modal Konfirmasi Hapus Kapal */}
+      {vesselToDelete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Hapus Data Kapal?</h3>
+                  <p className="text-xs text-slate-500 font-mono">{vesselToDelete.name} ({vesselToDelete.registrationNumber})</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed mb-5">
+                Apakah Anda yakin ingin menghapus kapal <strong>{vesselToDelete.name}</strong>? Tindakan ini akan menghapus data kapal dan seluruh log inspeksi terkait secara permanen dari Supabase, Firestore, dan penyimpanan lokal.
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setVesselToDelete(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  id="btn-confirm-delete-vessel"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    try {
+                      setIsDeleting(true);
+                      await deleteVessel(vesselToDelete.id);
+                      if (onDeleteVessel) {
+                        onDeleteVessel(vesselToDelete);
+                      }
+                      setVesselToDelete(null);
+                    } catch (err) {
+                      console.error('Gagal menghapus kapal:', err);
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Ya, Hapus Kapal</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table Footer */}
       <div className="px-3.5 sm:px-4 py-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-1">

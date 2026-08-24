@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { InspectionRecord, Vessel } from '../types';
 import { RiskBadge } from './RiskBadge';
-import { Search, Calendar, FileText, ChevronRight, MapPin } from 'lucide-react';
+import { Search, Calendar, FileText, ChevronRight, MapPin, Trash2, Loader2 } from 'lucide-react';
+import { deleteInspection } from '../services/vesselService';
 
 interface InspectionHistoryViewProps {
   inspections: InspectionRecord[];
@@ -18,6 +19,8 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'RESOLVED'>('ALL');
+  const [inspectionToDelete, setInspectionToDelete] = useState<InspectionRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const filteredInspections = inspections.filter((insp) => {
     if (selectedPort !== 'Semua Pelabuhan' && !insp.inspectionPort.toLowerCase().includes(selectedPort.toLowerCase())) {
@@ -189,21 +192,94 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
                     <span>Tersinkron di Supabase & Firestore</span>
                   </div>
 
-                  {matchedVessel && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onSelectVessel(matchedVessel)}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                      onClick={() => setInspectionToDelete(insp)}
+                      title="Hapus Rekam Inspeksi Ini"
+                      className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <span>Buka Profil Lengkap Kapal</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus Log</span>
                     </button>
-                  )}
+
+                    {matchedVessel && (
+                      <button
+                        onClick={() => onSelectVessel(matchedVessel)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Buka Profil Lengkap Kapal</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Modal Konfirmasi Hapus Log Inspeksi */}
+      {inspectionToDelete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Hapus Log Inspeksi?</h3>
+                  <p className="text-xs text-slate-500 font-mono">{inspectionToDelete.vesselName} • {inspectionToDelete.inspectionDate}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed mb-5">
+                Apakah Anda yakin ingin menghapus rekam inspeksi untuk <strong>{inspectionToDelete.vesselName}</strong> pada tanggal <strong>{inspectionToDelete.inspectionDate}</strong>? Rekam ini akan dihapus dari Supabase dan Firestore secara permanen.
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setInspectionToDelete(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    try {
+                      setIsDeleting(true);
+                      await deleteInspection(inspectionToDelete.id);
+                      setInspectionToDelete(null);
+                    } catch (err) {
+                      console.error('Gagal menghapus inspeksi:', err);
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Ya, Hapus Log</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

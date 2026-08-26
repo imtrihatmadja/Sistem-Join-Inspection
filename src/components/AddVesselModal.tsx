@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Vessel } from '../types';
 import { X, Plus, Ship, Check } from 'lucide-react';
 import { INDONESIAN_PORTS, PORT_GROUPS } from '../constants/ports';
+import { STANDARD_GEAR_TYPES } from '../constants/gearTypes';
 
 interface AddVesselModalProps {
   isOpen: boolean;
@@ -51,8 +52,8 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
         homePort,
         gearType,
         crewCapacity: Number(crewCapacity) || 15,
-        riskScore: 20,
-        riskLevel: 'LOW',
+        riskScore: 100,
+        riskLevel: 'HIGH',
         totalInspections: 0,
         status: 'ACTIVE',
         activeViolationsCount: 0,
@@ -247,13 +248,11 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
                 onChange={(e) => setGearType(e.target.value)}
                 className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-900 focus:ring-2 focus:ring-teal-500"
               >
-                <option value="Purse Seine Pelagis Besar">Purse Seine Pelagis Besar</option>
-                <option value="Tuna Longline">Tuna Longline</option>
-                <option value="Pole and Line (Huhate)">Pole and Line (Huhate)</option>
-                <option value="Jaring Insang Hanyut (Drift Gillnet)">Jaring Insang Hanyut (Drift Gillnet)</option>
-                <option value="Handline Tuna Organik">Handline Tuna Organik</option>
-                <option value="Bouke Ami (Cumi)">Bouke Ami (Cumi)</option>
-                <option value="Rawai Dasar (Bottom Longline)">Rawai Dasar (Bottom Longline)</option>
+                {STANDARD_GEAR_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </div>
 

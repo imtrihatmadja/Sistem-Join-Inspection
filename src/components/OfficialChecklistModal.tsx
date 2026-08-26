@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { calculateRiskFromOfficialChecklist } from '../services/riskEngine';
 import { INDONESIAN_PORTS, PORT_GROUPS, normalizePortName } from '../constants/ports';
+import { STANDARD_GEAR_TYPES } from '../constants/gearTypes';
 import { RiskBadge } from './RiskBadge';
 import {
   X,
@@ -121,20 +122,54 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     fishingOperationsPerTrip: '',
     dailyFishingOperationHours: '',
 
-    // Section 4: Operasional & Jam Kerja
+    // Section 4: Operasional & Fasilitas
     fishingGearType: '',
     daysAtSeaPerTrip: 0,
     dailyRestHoursCompliant: false,
     hasCleanWaterAccess: false,
     hasSufficientFoodSupply: false,
     hasAdequateAccommodation: false,
+    plannedSeaDays: 0,
 
     // Section 5: K3 & Keselamatan Kerja
+    hasPpeAvailable: false,
     hasPersonalProtectiveEquipment: false,
     hasLifeJacketsAvailable: false,
     lifeJacketCount: 0,
+    lifebuoyCount: 0,
+    otherPpeName: '',
+    otherPpeCount: 0,
+    ppeAdequacy: '',
+
     hasFireExtinguisherApar: false,
+    aparPowderChecked: false,
+    aparPowderCount: 0,
+    aparPowderExpiry: '',
+    aparPowderCondition: 'BAIK',
+    aparCo2Checked: false,
+    aparCo2Count: 0,
+    aparCo2Expiry: '',
+    aparCo2Condition: 'BAIK',
+    aparFoamChecked: false,
+    aparFoamCount: 0,
+    aparFoamExpiry: '',
+    aparFoamCondition: 'BAIK',
+    aparOtherChecked: false,
+    aparOtherName: '',
+    aparOtherCount: 0,
+    aparOtherExpiry: '',
+    aparOtherCondition: 'BAIK',
+
+    hasFirstAidBox: false,
+    firstAidBoxCondition: 'BAIK_BERSIH',
+    hasFirstAidMedicines: false,
     hasFirstAidKit: false,
+    firstAidMedicineExpiryStatus: 'MASIH_BERLAKU',
+    firstAidMedicineItems: [],
+
+    crewHealthComplaints: '',
+    healthComplaintNotes: '',
+
     hasAccidentLog: false,
     accidentConditions: '',
     accidentHistoryDetails: '',
@@ -152,7 +187,24 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     crewWithBstCount: 0,
     crewWithSeamanBookCount: 0,
 
-    // Section 8: Indikator & Pengesahan
+    // Section 8: Sistem Perekrutan
+    recruitmentVacantJobInfo: '',
+    recruitmentRecruiterType: '',
+    recruitmentAgentLicenseStatus: '',
+    recruitmentRecruiterName: '',
+    recruitmentRecruiterAddress: '',
+    recruitmentRecruiterPhone: '',
+    recruitmentIsHoused: null,
+    recruitmentHousingLocation: '',
+    recruitmentHousingCondition: '',
+    recruitmentFeeOrDeduction: '',
+    recruitmentOtherInfo: '',
+
+    // Section 9: Indikator & Pengesahan
+    identityHoldVerified: false,
+    arbitraryDeductionVerified: false,
+    integrityVerified: false,
+    freedomFromForcedLaborConfirmed: false,
     identityHoldFlag: false,
     arbitraryDeductionFlag: false,
     additionalNotes: '',
@@ -170,7 +222,11 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     noteIndicator19: '',
     noteIndicator20: '',
     noteIndicator21: '',
-    noteIndicator22: ''
+    noteIndicator22: '',
+    noteIndicator23: '',
+    noteIndicator24: '',
+    noteIndicator25: '',
+    noteIndicatorRecruitment: ''
   });
 
   // Prepopulate vessel data when initialVessel changes or modal opens
@@ -272,8 +328,8 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         fishingGround: 'WPPNRI 711 / Laut Natuna',
         gearType: newGearType,
         crewCapacity: Number(newCrewCapacity) || 15,
-        riskScore: 20,
-        riskLevel: 'LOW',
+        riskScore: 100,
+        riskLevel: 'HIGH',
         totalInspections: 0,
         status: 'ACTIVE',
         activeViolationsCount: 0,
@@ -334,7 +390,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         hasFairWageAgreement: !form.hasWageDeductions,
         hasProperRestHours: form.dailyRestHoursCompliant,
         hasAdequateFoodWater: form.hasCleanWaterAccess && form.hasSufficientFoodSupply,
-        hasFirstAidKits: form.hasFirstAidKit && form.hasLifeJacketsAvailable,
+        hasFirstAidKits: (form.hasFirstAidBox || form.hasFirstAidKit) && (form.hasPpeAvailable || form.hasLifeJacketsAvailable),
         identityHoldFlag: form.identityHoldFlag
       };
 
@@ -371,11 +427,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     { id: 1, title: 'I. Data Umum', icon: Ship, shortTitle: 'Umum' },
     { id: 2, title: 'II. PKL & Upah', icon: FileText, shortTitle: 'PKL/Upah' },
     { id: 3, title: 'III. Jaminan Sosial', icon: ShieldCheck, shortTitle: 'Jamsos' },
-    { id: 4, title: 'IV. Operasional & Istirahat', icon: Clock, shortTitle: 'Operasional' },
+    { id: 4, title: 'IV. Operasional & Fasilitas', icon: Clock, shortTitle: 'Operasional' },
     { id: 5, title: 'V. K3 & Keselamatan', icon: HeartPulse, shortTitle: 'K3' },
     { id: 6, title: 'VI. Fasilitasi Magang', icon: GraduationCap, shortTitle: 'Magang' },
     { id: 7, title: 'VII. Kompetensi AKP', icon: Award, shortTitle: 'Kompetensi' },
-    { id: 8, title: 'VIII. Red Flags & Tanda Tangan', icon: ShieldAlert, shortTitle: 'Pengesahan' }
+    { id: 8, title: 'VIII. Sistem Perekrutan', icon: Users, shortTitle: 'Perekrutan' },
+    { id: 9, title: 'IX. Red Flags & Pengesahan', icon: ShieldAlert, shortTitle: 'Pengesahan' }
   ];
 
   return (
@@ -633,13 +690,40 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
 
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">7. Jenis Alat Tangkap (API)</label>
-                    <input
-                      type="text"
-                      value={form.gearType || form.fishingGearType || ''}
-                      onChange={(e) => setForm({ ...form, gearType: e.target.value, fishingGearType: e.target.value })}
-                      placeholder="Contoh: Purse Seine, Longline Tuna, Bouke Ami"
-                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900"
-                    />
+                    <select
+                      value={
+                        STANDARD_GEAR_TYPES.includes(form.gearType || form.fishingGearType || '')
+                          ? (form.gearType || form.fishingGearType)
+                          : (form.gearType ? 'CUSTOM' : STANDARD_GEAR_TYPES[0])
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          if (STANDARD_GEAR_TYPES.includes(form.gearType || '')) {
+                            setForm({ ...form, gearType: '', fishingGearType: '' });
+                          }
+                        } else {
+                          setForm({ ...form, gearType: val, fishingGearType: val });
+                        }
+                      }}
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900 font-medium focus:ring-2 focus:ring-blue-500"
+                    >
+                      {STANDARD_GEAR_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                      <option value="CUSTOM">-- Lainnya / Ketik Manual --</option>
+                    </select>
+                    {(!STANDARD_GEAR_TYPES.includes(form.gearType || '') || form.gearType === 'CUSTOM') && (
+                      <input
+                        type="text"
+                        value={form.gearType === 'CUSTOM' ? '' : (form.gearType || '')}
+                        onChange={(e) => setForm({ ...form, gearType: e.target.value, fishingGearType: e.target.value })}
+                        placeholder="Ketik jenis alat tangkap lainnya..."
+                        className="mt-2 w-full rounded-lg border border-blue-300 p-2 text-xs bg-blue-50/40 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -1079,12 +1163,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               </div>
             )}
 
-            {/* SECTION 4: OPERASIONAL & JAM KERJA */}
+            {/* SECTION 4: OPERASIONAL & KELAYAKAN FASILITAS */}
             {activeSection === 4 && (
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS</h3>
-                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 14 - 16</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 14 - 17</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -1110,7 +1194,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                     />
                   </div>
 
-                  <div className="sm:col-span-2 space-y-2.5 pt-2">
+                  <div className="sm:col-span-2 space-y-2.5 pt-1">
                     <label className="block font-semibold text-slate-800">16. Standar Fasilitas & Jam Istirahat (ILO C188):</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <label className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${form.dailyRestHoursCompliant ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
@@ -1167,6 +1251,43 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Checklist No. 17: Lama rencana operasional di laut */}
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div>
+                      <label className="block font-bold text-slate-800 text-xs">
+                        17. Lama Rencana Operasional di Laut
+                      </label>
+                      <p className="text-[11px] font-normal text-slate-500">
+                        Durasi rencana operasional penangkapan ikan di laut untuk trip yang akan berjalan
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1 max-w-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.plannedSeaDays ?? form.daysAtSeaPerTrip ?? 0}
+                          onChange={(e) => setForm({ ...form, plannedSeaDays: Number(e.target.value) })}
+                          placeholder="Jumlah hari rencana melaut"
+                          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500 pr-12"
+                        />
+                        <span className="absolute right-3 top-2 text-xs font-bold text-slate-500 pointer-events-none">
+                          Hari
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pt-1">
+                      <input
+                        type="text"
+                        value={form.noteIndicator17 || ''}
+                        onChange={(e) => setForm({ ...form, noteIndicator17: e.target.value })}
+                        placeholder="Catatan tambahan rencana operasional berlayar..."
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}
@@ -1176,145 +1297,576 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM</h3>
-                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 17 - 20</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 18 - 23</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                  {/* Indikator 17 */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                    <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all ${form.hasLifeJacketsAvailable ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
-                      <input
-                        type="checkbox"
-                        checked={form.hasLifeJacketsAvailable}
-                        onChange={(e) => setForm({ ...form, hasLifeJacketsAvailable: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <div>
-                        <span>17. Lifejacket / Pelampung Sesuai Jumlah ABK</span>
-                        <p className="text-[11px] font-normal text-slate-500">Min. 1 pelampung per orang di atas kapal</p>
-                      </div>
-                    </label>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Catatan Pemeriksa (Indikator No. 17 - Lifejacket):
-                      </label>
-                      <input
-                        type="text"
-                        value={form.noteIndicator17 || ''}
-                        onChange={(e) => setForm({ ...form, noteIndicator17: e.target.value })}
-                        placeholder="Catatan jumlah, kelayakan, atau penempatan lifejacket..."
-                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Indikator 18 */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                    <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all ${form.hasFireExtinguisherApar ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
-                      <input
-                        type="checkbox"
-                        checked={form.hasFireExtinguisherApar}
-                        onChange={(e) => setForm({ ...form, hasFireExtinguisherApar: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <div>
-                        <span>18. Alat Pemadam Api Ringan (APAR)</span>
-                        <p className="text-[11px] font-normal text-slate-500">Kondisi siap pakai dan belum kadaluarsa</p>
-                      </div>
-                    </label>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Catatan Pemeriksa (Indikator No. 18 - APAR):
-                      </label>
-                      <input
-                        type="text"
-                        value={form.noteIndicator18 || ''}
-                        onChange={(e) => setForm({ ...form, noteIndicator18: e.target.value })}
-                        placeholder="Catatan jumlah tabung, tekanan, masa berlaku APAR..."
-                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Indikator 19 */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                    <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all ${form.hasFirstAidKit ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
-                      <input
-                        type="checkbox"
-                        checked={form.hasFirstAidKit}
-                        onChange={(e) => setForm({ ...form, hasFirstAidKit: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <div>
-                        <span>19. Kotak & Obat-obatan P3K Maritim</span>
-                        <p className="text-[11px] font-normal text-slate-500">Dilengkapi obat darurat pelayaran</p>
-                      </div>
-                    </label>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Catatan Pemeriksa (Indikator No. 19 - Obat & Kotak P3K):
-                      </label>
-                      <input
-                        type="text"
-                        value={form.noteIndicator19 || ''}
-                        onChange={(e) => setForm({ ...form, noteIndicator19: e.target.value })}
-                        placeholder="Catatan kelengkapan obat luka, obat darurat, atau masa berlaku..."
-                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Indikator 20 */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                    <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all ${form.hasAccidentLog ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
-                      <input
-                        type="checkbox"
-                        checked={form.hasAccidentLog}
-                        onChange={(e) => setForm({ ...form, hasAccidentLog: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <div>
-                        <span>20. Buku Log Pencatatan Kecelakaan Kerja</span>
-                        <p className="text-[11px] font-normal text-slate-500">Mencatat insiden medis / kecelakaan di laut</p>
-                      </div>
-                    </label>
-
-                    {/* Kondisi Kecelakaan & Kasus Kecelakaan Form Fields */}
-                    <div className="pt-2 border-t border-slate-200 space-y-2">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                          Kondisi Kecelakaan Kerja / Potensi Bahaya:
-                        </label>
+                  {/* Indikator 18: Jenis APD yang Tersedia */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all flex-1 ${form.hasPpeAvailable || form.hasLifeJacketsAvailable ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
                         <input
-                          type="text"
-                          value={form.accidentConditions || ''}
-                          onChange={(e) => setForm({ ...form, accidentConditions: e.target.value })}
-                          placeholder="Contoh: Terpeleset di geladak basah, tertimpa jaring, kabel putus"
-                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                          type="checkbox"
+                          checked={form.hasPpeAvailable || form.hasLifeJacketsAvailable}
+                          onChange={(e) => setForm({
+                            ...form,
+                            hasPpeAvailable: e.target.checked,
+                            hasLifeJacketsAvailable: e.target.checked,
+                            hasPersonalProtectiveEquipment: e.target.checked
+                          })}
+                          className="w-4 h-4 text-blue-600 rounded"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                          Kasus Kecelakaan yang Pernah Terjadi:
-                        </label>
-                        <input
-                          type="text"
-                          value={form.accidentHistoryDetails || ''}
-                          onChange={(e) => setForm({ ...form, accidentHistoryDetails: e.target.value })}
-                          placeholder="Contoh: 1 kasus luka ringan di trip sebelumnya, nihil kasus fatal"
-                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                        <div>
+                          <span>18. Jenis Alat Pelindung Diri (APD) yang Tersedia</span>
+                          <p className="text-[11px] font-normal text-slate-500">Ketersediaan dan kelayakan perlengkapan keselamatan ABK di atas kapal</p>
+                        </div>
+                      </label>
                     </div>
+
+                    {(form.hasPpeAvailable || form.hasLifeJacketsAvailable) && (
+                      <div className="p-3 bg-white rounded-lg border border-blue-200 space-y-3">
+                        <div className="text-xs font-bold text-blue-950">Rincian Ketersediaan & Jumlah APD:</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {/* 1. Lifejacket */}
+                          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-800">1. Life Jacket / Pelampung</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-slate-500 whitespace-nowrap">Jumlah:</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={form.lifeJacketCount || 0}
+                                onChange={(e) => setForm({ ...form, lifeJacketCount: Number(e.target.value) })}
+                                className="w-full rounded-md border border-slate-300 p-1.5 text-xs bg-white font-semibold text-slate-900"
+                                placeholder="Pcs"
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-500">Rasio min. 1:1 sesuai jumlah total ABK ({form.totalCrewCount} orang)</p>
+                          </div>
+
+                          {/* 2. Lifebuoy */}
+                          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-800">2. Lifebuoy / Ban Penyelamat</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-slate-500 whitespace-nowrap">Jumlah:</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={form.lifebuoyCount || 0}
+                                onChange={(e) => setForm({ ...form, lifebuoyCount: Number(e.target.value) })}
+                                className="w-full rounded-md border border-slate-300 p-1.5 text-xs bg-white font-semibold text-slate-900"
+                                placeholder="Pcs"
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-500">Pelampung lempar siap pakai di lambung/geladak</p>
+                          </div>
+
+                          {/* 3. Lainnya */}
+                          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-800">3. APD Lainnya</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={form.otherPpeName || ''}
+                              onChange={(e) => setForm({ ...form, otherPpeName: e.target.value })}
+                              placeholder="Nama APD (cth: Helm, Sarung Tangan, Sepatu Boot)"
+                              className="w-full rounded-md border border-slate-300 p-1 text-xs bg-white text-slate-900 placeholder:text-slate-400"
+                            />
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-slate-500 whitespace-nowrap">Jumlah:</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={form.otherPpeCount || 0}
+                                onChange={(e) => setForm({ ...form, otherPpeCount: Number(e.target.value) })}
+                                className="w-full rounded-md border border-slate-300 p-1.5 text-xs bg-white font-semibold text-slate-900"
+                                placeholder="Pcs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Catatan Pemeriksa (Indikator No. 20 - Logbook Kecelakaan):
+                        Catatan Pemeriksa (Indikator No. 18 - APD & Pelampung):
+                      </label>
+                      <input
+                        type="text"
+                        value={form.noteIndicator18 || form.noteIndicator17 || ''}
+                        onChange={(e) => setForm({ ...form, noteIndicator18: e.target.value, noteIndicator17: e.target.value })}
+                        placeholder="Catatan jumlah, kelayakan kondisi fisik, atau penempatan APD..."
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Indikator 19: Alat Pemadam Api Ringan (APAR) */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all flex-1 ${form.hasFireExtinguisherApar ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="checkbox"
+                          checked={form.hasFireExtinguisherApar}
+                          onChange={(e) => setForm({ ...form, hasFireExtinguisherApar: e.target.checked })}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <div>
+                          <span>19. Alat Pemadam Api Ringan (APAR)</span>
+                          <p className="text-[11px] font-normal text-slate-500">Ketersediaan jenis APAR berdasarkan media pemadam, masa kadaluarsa, dan kondisi fisik</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {form.hasFireExtinguisherApar && (
+                      <div className="p-3 bg-white rounded-lg border border-blue-200 space-y-3">
+                        <div className="text-xs font-bold text-blue-950">Pilih Jenis APAR Berdasarkan Media Pemadam:</div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* 1. Media Dry Powder */}
+                          <div className={`p-2.5 rounded-lg border space-y-2 ${form.aparPowderChecked ? 'bg-blue-50/50 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                              <input
+                                type="checkbox"
+                                checked={form.aparPowderChecked}
+                                onChange={(e) => setForm({ ...form, aparPowderChecked: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>1. Media Serbuk Kering (Dry Powder)</span>
+                            </label>
+                            {form.aparPowderChecked && (
+                              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Jumlah:</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={form.aparPowderCount || 1}
+                                    onChange={(e) => setForm({ ...form, aparPowderCount: Number(e.target.value) })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kadaluarsa:</label>
+                                  <input
+                                    type="text"
+                                    value={form.aparPowderExpiry || ''}
+                                    onChange={(e) => setForm({ ...form, aparPowderExpiry: e.target.value })}
+                                    placeholder="Bln/Thn"
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kondisi Fisik:</label>
+                                  <select
+                                    value={form.aparPowderCondition || 'BAIK'}
+                                    onChange={(e) => setForm({ ...form, aparPowderCondition: e.target.value })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  >
+                                    <option value="BAIK">Baik / Mulus</option>
+                                    <option value="KOROSI">Korosi / Berkarat</option>
+                                    <option value="BERLUBANG">Berlubang / Rusak</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 2. Media CO2 */}
+                          <div className={`p-2.5 rounded-lg border space-y-2 ${form.aparCo2Checked ? 'bg-blue-50/50 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                              <input
+                                type="checkbox"
+                                checked={form.aparCo2Checked}
+                                onChange={(e) => setForm({ ...form, aparCo2Checked: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>2. Media Karbon Dioksida (CO2)</span>
+                            </label>
+                            {form.aparCo2Checked && (
+                              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Jumlah:</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={form.aparCo2Count || 1}
+                                    onChange={(e) => setForm({ ...form, aparCo2Count: Number(e.target.value) })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kadaluarsa:</label>
+                                  <input
+                                    type="text"
+                                    value={form.aparCo2Expiry || ''}
+                                    onChange={(e) => setForm({ ...form, aparCo2Expiry: e.target.value })}
+                                    placeholder="Bln/Thn"
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kondisi Fisik:</label>
+                                  <select
+                                    value={form.aparCo2Condition || 'BAIK'}
+                                    onChange={(e) => setForm({ ...form, aparCo2Condition: e.target.value })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  >
+                                    <option value="BAIK">Baik / Mulus</option>
+                                    <option value="KOROSI">Korosi / Berkarat</option>
+                                    <option value="BERLUBANG">Berlubang / Rusak</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 3. Media Foam (Busa) */}
+                          <div className={`p-2.5 rounded-lg border space-y-2 ${form.aparFoamChecked ? 'bg-blue-50/50 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                              <input
+                                type="checkbox"
+                                checked={form.aparFoamChecked}
+                                onChange={(e) => setForm({ ...form, aparFoamChecked: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>3. Media Busa / Cairan Kimia (Foam)</span>
+                            </label>
+                            {form.aparFoamChecked && (
+                              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Jumlah:</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={form.aparFoamCount || 1}
+                                    onChange={(e) => setForm({ ...form, aparFoamCount: Number(e.target.value) })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kadaluarsa:</label>
+                                  <input
+                                    type="text"
+                                    value={form.aparFoamExpiry || ''}
+                                    onChange={(e) => setForm({ ...form, aparFoamExpiry: e.target.value })}
+                                    placeholder="Bln/Thn"
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 mb-0.5">Kondisi Fisik:</label>
+                                  <select
+                                    value={form.aparFoamCondition || 'BAIK'}
+                                    onChange={(e) => setForm({ ...form, aparFoamCondition: e.target.value })}
+                                    className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                  >
+                                    <option value="BAIK">Baik / Mulus</option>
+                                    <option value="KOROSI">Korosi / Berkarat</option>
+                                    <option value="BERLUBANG">Berlubang / Rusak</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 4. Media Lainnya */}
+                          <div className={`p-2.5 rounded-lg border space-y-2 ${form.aparOtherChecked ? 'bg-blue-50/50 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                              <input
+                                type="checkbox"
+                                checked={form.aparOtherChecked}
+                                onChange={(e) => setForm({ ...form, aparOtherChecked: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>4. Jenis Media Pemadam Lainnya</span>
+                            </label>
+                            {form.aparOtherChecked && (
+                              <div className="space-y-1.5 pt-1 text-[11px]">
+                                <input
+                                  type="text"
+                                  value={form.aparOtherName || ''}
+                                  onChange={(e) => setForm({ ...form, aparOtherName: e.target.value })}
+                                  placeholder="Nama jenis media (cth: Gas Bersih / Halon / Water Mist)"
+                                  className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                />
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <label className="block text-slate-500 mb-0.5">Jumlah:</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={form.aparOtherCount || 1}
+                                      onChange={(e) => setForm({ ...form, aparOtherCount: Number(e.target.value) })}
+                                      className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-500 mb-0.5">Kadaluarsa:</label>
+                                    <input
+                                      type="text"
+                                      value={form.aparOtherExpiry || ''}
+                                      onChange={(e) => setForm({ ...form, aparOtherExpiry: e.target.value })}
+                                      placeholder="Bln/Thn"
+                                      className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-500 mb-0.5">Kondisi Fisik:</label>
+                                    <select
+                                      value={form.aparOtherCondition || 'BAIK'}
+                                      onChange={(e) => setForm({ ...form, aparOtherCondition: e.target.value })}
+                                      className="w-full rounded border border-slate-300 p-1 text-xs bg-white"
+                                    >
+                                      <option value="BAIK">Baik / Mulus</option>
+                                      <option value="KOROSI">Korosi / Berkarat</option>
+                                      <option value="BERLUBANG">Berlubang / Rusak</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        Catatan Pemeriksa (Indikator No. 19 - APAR):
+                      </label>
+                      <input
+                        type="text"
+                        value={form.noteIndicator19 || form.noteIndicator18 || ''}
+                        onChange={(e) => setForm({ ...form, noteIndicator19: e.target.value, noteIndicator18: e.target.value })}
+                        placeholder="Catatan jumlah tabung, tekanan, masa berlaku, atau kondisi fisik APAR..."
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Indikator 20: Kotak Obat */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all flex-1 ${form.hasFirstAidBox ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="checkbox"
+                          checked={form.hasFirstAidBox}
+                          onChange={(e) => setForm({ ...form, hasFirstAidBox: e.target.checked })}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <div>
+                          <span>20. Kotak Obat (P3K Fisik)</span>
+                          <p className="text-[11px] font-normal text-slate-500">Ketersediaan kotak/lemari penyimpanan obat di kapal</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {form.hasFirstAidBox && (
+                      <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-1 text-xs">
+                        <label className="block font-semibold text-slate-700">Kondisi Fisik Kotak Obat:</label>
+                        <select
+                          value={form.firstAidBoxCondition || 'BAIK_BERSIH'}
+                          onChange={(e) => setForm({ ...form, firstAidBoxCondition: e.target.value })}
+                          className="w-full rounded border border-slate-300 p-1.5 text-xs bg-white text-slate-900"
+                        >
+                          <option value="BAIK_BERSIH">Baik, Kering & Bersih</option>
+                          <option value="KOTOR_LEMBAP">Kotor / Lembap / Berdebu</option>
+                          <option value="RUSAK">Rusak / Tidak Layak Pakai</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        Catatan Pemeriksa (Indikator No. 20 - Kotak Obat):
                       </label>
                       <input
                         type="text"
                         value={form.noteIndicator20 || ''}
                         onChange={(e) => setForm({ ...form, noteIndicator20: e.target.value })}
+                        placeholder="Catatan kebersihan kotak, lokasi penempatan, atau aksesibilitas..."
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Indikator 21: Obat-obatan */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all flex-1 ${form.hasFirstAidMedicines || form.hasFirstAidKit ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="checkbox"
+                          checked={form.hasFirstAidMedicines || form.hasFirstAidKit}
+                          onChange={(e) => setForm({
+                            ...form,
+                            hasFirstAidMedicines: e.target.checked,
+                            hasFirstAidKit: e.target.checked
+                          })}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <div>
+                          <span>21. Obat-Obatan P3K Maritim</span>
+                          <p className="text-[11px] font-normal text-slate-500">Kelengkapan obat standar darurat pelayaran & masa berlaku</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {(form.hasFirstAidMedicines || form.hasFirstAidKit) && (
+                      <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-2 text-xs">
+                        <div>
+                          <label className="block font-semibold text-slate-700 mb-1">Status Masa Kadaluarsa Obat:</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className={`p-1.5 rounded border flex items-center gap-1.5 cursor-pointer text-[11px] ${form.firstAidMedicineExpiryStatus !== 'KADALUARSA' ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-slate-50'}`}>
+                              <input
+                                type="radio"
+                                name="firstAidExpiry"
+                                checked={form.firstAidMedicineExpiryStatus !== 'KADALUARSA'}
+                                onChange={() => setForm({ ...form, firstAidMedicineExpiryStatus: 'MASIH_BERLAKU' })}
+                                className="w-3.5 h-3.5 text-emerald-600"
+                              />
+                              <span>Masih Berlaku (Aman)</span>
+                            </label>
+                            <label className={`p-1.5 rounded border flex items-center gap-1.5 cursor-pointer text-[11px] ${form.firstAidMedicineExpiryStatus === 'KADALUARSA' ? 'bg-rose-50 border-rose-400 font-bold text-rose-900' : 'bg-slate-50'}`}>
+                              <input
+                                type="radio"
+                                name="firstAidExpiry"
+                                checked={form.firstAidMedicineExpiryStatus === 'KADALUARSA'}
+                                onChange={() => setForm({ ...form, firstAidMedicineExpiryStatus: 'KADALUARSA' })}
+                                className="w-3.5 h-3.5 text-rose-600"
+                              />
+                              <span>Ada Obat Kadaluarsa</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Daftar / Jenis Obat Tersedia:</label>
+                          <input
+                            type="text"
+                            value={form.firstAidMedicineItems?.join(', ') || ''}
+                            onChange={(e) => setForm({ ...form, firstAidMedicineItems: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            placeholder="Contoh: Paracetamol, Betadine/Povidone, Kasa Perban, Obat Diare, Antihistamin, Plester"
+                            className="w-full rounded border border-slate-300 p-1.5 text-xs bg-white text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        Catatan Pemeriksa (Indikator No. 21 - Obat-obatan P3K):
+                      </label>
+                      <input
+                        type="text"
+                        value={form.noteIndicator21 || form.noteIndicator19 || ''}
+                        onChange={(e) => setForm({ ...form, noteIndicator21: e.target.value, noteIndicator19: e.target.value })}
+                        placeholder="Catatan stok obat, tanggal kedaluwarsa, atau kekurangan obat..."
+                        className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Checklist No. 22: Keluhan kesehatan ABK */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 sm:col-span-2">
+                    <div>
+                      <label className="block font-bold text-slate-800 text-xs">
+                        22. Keluhan Kesehatan Awak Kapal (ABK)
+                      </label>
+                      <p className="text-[11px] font-normal text-slate-500">
+                        Pencatatan riwayat keluhan atau gejala sakit yang dialami ABK selama operasional
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Riwayat Keluhan / Gejala Sakit yang Dialami ABK:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.crewHealthComplaints || ''}
+                          onChange={(e) => setForm({ ...form, crewHealthComplaints: e.target.value })}
+                          placeholder="Contoh: Demam berulang, sesak nafas, nyeri lambung, gatal-gatal di laut, nihil keluhan"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Catatan / Tindakan Medis Rujukan:
+                        </label>
+                        <input
+                          type="text"
+                          value={form.healthComplaintNotes || ''}
+                          onChange={(e) => setForm({ ...form, healthComplaintNotes: e.target.value })}
+                          placeholder="Contoh: Diberi obat jalan, disarankan berobat ke KKP Pelabuhan"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Indikator 23: Buku Log Pencatatan Kecelakaan Kerja */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className={`p-2.5 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all flex-1 ${form.hasAccidentLog ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="checkbox"
+                          checked={form.hasAccidentLog}
+                          onChange={(e) => setForm({ ...form, hasAccidentLog: e.target.checked })}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <div>
+                          <span>23. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden</span>
+                          <p className="text-[11px] font-normal text-slate-500">Mencatat insiden medis, kecelakaan di laut, dan tindakan pertolongan</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            Kondisi Kecelakaan Kerja / Potensi Bahaya:
+                          </label>
+                          <input
+                            type="text"
+                            value={form.accidentConditions || ''}
+                            onChange={(e) => setForm({ ...form, accidentConditions: e.target.value })}
+                            placeholder="Contoh: Terpeleset di geladak basah, tertimpa jaring, kabel putus"
+                            className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            Kasus Kecelakaan yang Pernah Terjadi:
+                          </label>
+                          <input
+                            type="text"
+                            value={form.accidentHistoryDetails || ''}
+                            onChange={(e) => setForm({ ...form, accidentHistoryDetails: e.target.value })}
+                            placeholder="Contoh: 1 kasus luka ringan di trip sebelumnya, nihil kasus fatal"
+                            className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        Catatan Pemeriksa (Indikator No. 23 - Logbook Kecelakaan):
+                      </label>
+                      <input
+                        type="text"
+                        value={form.noteIndicator23 || form.noteIndicator20 || ''}
+                        onChange={(e) => setForm({ ...form, noteIndicator23: e.target.value, noteIndicator20: e.target.value })}
                         placeholder="Catatan keterisian buku log kecelakaan atau rekam jejak insiden..."
                         className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
                       />
@@ -1329,11 +1881,11 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">VI. FASILITASI MAGANG & LARANGAN PEKERJA ANAK</h3>
-                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 21</p>
+                  <p className="text-xs text-slate-500">Indikator Kepatuhan No. 24</p>
                 </div>
 
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs">
-                  <div className="font-semibold text-slate-800">21. Fasilitasi Siswa Magang & Bebas Pekerja Anak</div>
+                  <div className="font-semibold text-slate-800">24. Fasilitasi Siswa Magang & Bebas Pekerja Anak</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <label className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${form.hasApprenticeOrStudents === false ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
                       <input
@@ -1418,12 +1970,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
 
                   <div className="pt-2 border-t border-slate-200">
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Catatan Pemeriksa (Indikator No. 21 - Pemagangan & Perlindungan Anak):
+                      Catatan Pemeriksa (Indikator No. 24 - Pemagangan & Perlindungan Anak):
                     </label>
                     <input
                       type="text"
-                      value={form.noteIndicator21 || ''}
-                      onChange={(e) => setForm({ ...form, noteIndicator21: e.target.value })}
+                      value={form.noteIndicator24 || form.noteIndicator21 || ''}
+                      onChange={(e) => setForm({ ...form, noteIndicator24: e.target.value, noteIndicator21: e.target.value })}
                       placeholder="Tuliskan catatan asal sekolah magang, kondisi kerja siswa, atau verifikasi usia anak..."
                       className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
                     />
@@ -1437,12 +1989,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-bold text-slate-900">VII. BUKTI KOMPETENSI AWAK KAPAL PERIKANAN (AKP)</h3>
-                  <p className="text-xs text-slate-500">Indikator No. 22</p>
+                  <p className="text-xs text-slate-500">Indikator No. 25</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                   <div className="sm:col-span-2">
-                    <label className="block font-semibold text-slate-700 mb-1">22. Bukti Sertifikat Kompetensi & Dokumen Pelaut ABK</label>
+                    <label className="block font-semibold text-slate-700 mb-1">25. Bukti Sertifikat Kompetensi & Dokumen Pelaut ABK</label>
                     <input
                       type="text"
                       value={form.competenciesAvailable.join(', ')}
@@ -1476,12 +2028,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
 
                   <div className="sm:col-span-2 pt-1">
                     <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Catatan Pemeriksa (Indikator No. 22 - Kompetensi & Sertifikat ABK):
+                      Catatan Pemeriksa (Indikator No. 25 - Kompetensi & Sertifikat ABK):
                     </label>
                     <input
                       type="text"
-                      value={form.noteIndicator22 || ''}
-                      onChange={(e) => setForm({ ...form, noteIndicator22: e.target.value })}
+                      value={form.noteIndicator25 || form.noteIndicator22 || ''}
+                      onChange={(e) => setForm({ ...form, noteIndicator25: e.target.value, noteIndicator22: e.target.value })}
                       placeholder="Tuliskan catatan masa berlaku BST-F, buku pelaut, atau catatan kompetensi keahlian ABK..."
                       className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
                     />
@@ -1490,49 +2042,297 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
               </div>
             )}
 
-            {/* SECTION 8: RED FLAGS & PENGESAHAN */}
+            {/* SECTION 8: SISTEM PEREKRUTAN AWAK KAPAL */}
             {activeSection === 8 && (
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-bold text-slate-900">VIII. INDIKATOR PELANGGARAN KHUSUS & PENGESAHAN</h3>
+                  <h3 className="text-sm font-bold text-slate-900">VIII. SISTEM PEREKRUTAN AWAK KAPAL PERIKANAN</h3>
+                  <p className="text-xs text-slate-500">Mekanisme Rekrutmen, Agen/Penyalur, dan Penampungan ABK</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                  {/* 1. Dari mana info lowongan kerja di ketahui */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                    <label className="block font-bold text-slate-800">
+                      1. Dari Mana Info Lowongan Kerja Diketahui?
+                    </label>
+                    <select
+                      value={form.recruitmentVacantJobInfo || ''}
+                      onChange={(e) => setForm({ ...form, recruitmentVacantJobInfo: e.target.value })}
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                    >
+                      <option value="">Pilih Sumber Informasi Lowongan...</option>
+                      <option value="KELUARGA_KERABAT">Kerabat / Rekan Sekampung</option>
+                      <option value="MEDIA_SOSIAL">Media Sosial (Facebook, WA Group, TikTok, dll)</option>
+                      <option value="AGEN_CALO">Agen / Calo / Broker Pelabuhan</option>
+                      <option value="PAMFLET_BROSUR">Pamflet / Brosur / Iklan Resmi</option>
+                      <option value="LAINNYA">Sumber Lainnya</option>
+                    </select>
+                  </div>
+
+                  {/* 2. Direkrut oleh siapa */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                    <label className="block font-bold text-slate-800">
+                      2. Direkrut Oleh Siapa?
+                    </label>
+                    <select
+                      value={form.recruitmentRecruiterType || ''}
+                      onChange={(e) => setForm({ ...form, recruitmentRecruiterType: e.target.value })}
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                    >
+                      <option value="">Pilih Pihak Perekrut...</option>
+                      <option value="PEMILIK_LANGSUNG">Pemilik Kapal Langsung / Nahkoda</option>
+                      <option value="AGEN_MANNING">Agen Penyalur / Manning Agency</option>
+                      <option value="CALO_PERORANGAN">Calo / Perantara Perorangan</option>
+                      <option value="MANDIRI_LANGSUNG">Mandiri Datang ke Dermaga</option>
+                    </select>
+                  </div>
+
+                  {/* 3. Apakah agen memiliki perizinan */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 sm:col-span-2">
+                    <label className="block font-bold text-slate-800">
+                      3. Apakah Agen / Perekrut Memiliki Legalitas Perizinan (SIUPPAK / SIUP)?
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer ${form.recruitmentAgentLicenseStatus === 'BERIZIN' ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="radio"
+                          name="agentLicense"
+                          checked={form.recruitmentAgentLicenseStatus === 'BERIZIN'}
+                          onChange={() => setForm({ ...form, recruitmentAgentLicenseStatus: 'BERIZIN' })}
+                          className="w-4 h-4 text-emerald-600"
+                        />
+                        <span>Memiliki Izin Resmi (SIUPPAK/SIUP)</span>
+                      </label>
+                      <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer ${form.recruitmentAgentLicenseStatus === 'TIDAK_BERIZIN' ? 'bg-rose-50 border-rose-400 font-bold text-rose-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="radio"
+                          name="agentLicense"
+                          checked={form.recruitmentAgentLicenseStatus === 'TIDAK_BERIZIN'}
+                          onChange={() => setForm({ ...form, recruitmentAgentLicenseStatus: 'TIDAK_BERIZIN' })}
+                          className="w-4 h-4 text-rose-600"
+                        />
+                        <span>Tidak Memiliki Izin Resmi (Ilegal)</span>
+                      </label>
+                      <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer ${form.recruitmentAgentLicenseStatus === 'TIDAK_TAHU' ? 'bg-slate-100 border-slate-300 font-bold text-slate-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="radio"
+                          name="agentLicense"
+                          checked={form.recruitmentAgentLicenseStatus === 'TIDAK_TAHU'}
+                          onChange={() => setForm({ ...form, recruitmentAgentLicenseStatus: 'TIDAK_TAHU' })}
+                          className="w-4 h-4 text-slate-600"
+                        />
+                        <span>ABK Tidak Tahu / Tidak Jelas</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* 4. Nama, Alamat, Kontak Perekrut */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 sm:col-span-2">
+                    <label className="block font-bold text-slate-800">
+                      4. Identitas & Kontak Agen / Pihak Perekrut:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] text-slate-600 mb-0.5">Nama Perekrut / PT Agen:</label>
+                        <input
+                          type="text"
+                          value={form.recruitmentRecruiterName || ''}
+                          onChange={(e) => setForm({ ...form, recruitmentRecruiterName: e.target.value })}
+                          placeholder="Nama lengkap atau PT Agen"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-600 mb-0.5">Nomor HP / Kontak:</label>
+                        <input
+                          type="text"
+                          value={form.recruitmentRecruiterPhone || ''}
+                          onChange={(e) => setForm({ ...form, recruitmentRecruiterPhone: e.target.value })}
+                          placeholder="No. Telepon / WA"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-600 mb-0.5">Alamat / Kota Kantor Agen:</label>
+                        <input
+                          type="text"
+                          value={form.recruitmentRecruiterAddress || ''}
+                          onChange={(e) => setForm({ ...form, recruitmentRecruiterAddress: e.target.value })}
+                          placeholder="Kota / Alamat penampungan"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. Apakah ditampung sebelum berangkat melaut */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 sm:col-span-2">
+                    <label className="block font-bold text-slate-800">
+                      5. Apakah ABK Ditampung Terlebih Dahulu Sebelum Berangkat Melaut?
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer ${form.recruitmentIsHoused === false ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="radio"
+                          name="isHoused"
+                          checked={form.recruitmentIsHoused === false}
+                          onChange={() => setForm({ ...form, recruitmentIsHoused: false, recruitmentHousingLocation: '', recruitmentHousingCondition: '' })}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <span>Tidak Ditampung (Langsung ke Kapal / Berangkat)</span>
+                      </label>
+                      <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer ${form.recruitmentIsHoused === true ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200'}`}>
+                        <input
+                          type="radio"
+                          name="isHoused"
+                          checked={form.recruitmentIsHoused === true}
+                          onChange={() => setForm({ ...form, recruitmentIsHoused: true })}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <span>Ya, Ditampung di Mes / Mess / Rumah Agen</span>
+                      </label>
+                    </div>
+
+                    {form.recruitmentIsHoused && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            Lokasi Tempat Penampungan:
+                          </label>
+                          <input
+                            type="text"
+                            value={form.recruitmentHousingLocation || ''}
+                            onChange={(e) => setForm({ ...form, recruitmentHousingLocation: e.target.value })}
+                            placeholder="Contoh: Mess Penampungan di Pelabuhan Nizam Zachman Jakarta"
+                            className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            Kondisi Kelayakan Tempat Penampungan:
+                          </label>
+                          <select
+                            value={form.recruitmentHousingCondition || 'LAYAK'}
+                            onChange={(e) => setForm({ ...form, recruitmentHousingCondition: e.target.value })}
+                            className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                          >
+                            <option value="LAYAK">Layak (Air, Kasur, Ventilasi Cukup)</option>
+                            <option value="KURANG_LAYAK">Kurang Layak (Berdesakan / Sanitasi Minim)</option>
+                            <option value="TIDAK_LAYAK">Tidak Layak (Terkunci / Dilarang Keluar)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 6. Biaya Rekrutmen / Potongan Biaya Awal */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 sm:col-span-2">
+                    <label className="block font-bold text-slate-800">
+                      6. Biaya Perekrutan / Skema Uang Muka / Potongan Biaya Awal:
+                    </label>
+                    <input
+                      type="text"
+                      value={form.recruitmentFeeOrDeduction || ''}
+                      onChange={(e) => setForm({ ...form, recruitmentFeeOrDeduction: e.target.value })}
+                      placeholder="Contoh: Gratis tanpa biaya / Ada potongan uang muka Rp 2.000.000 dipotong dari gaji bagi hasil"
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
+                    />
+                  </div>
+
+                  {/* 7. Catatan / Informasi Tambahan Lainnya */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      7. Catatan / Informasi Tambahan Terkait Proses Perekrutan ABK:
+                    </label>
+                    <input
+                      type="text"
+                      value={form.noteIndicatorRecruitment || form.recruitmentOtherInfo || ''}
+                      onChange={(e) => setForm({ ...form, noteIndicatorRecruitment: e.target.value, recruitmentOtherInfo: e.target.value })}
+                      placeholder="Tuliskan temuan khusus terkait janji agen, penahanan uang saku, atau jalur rekrutmen..."
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 9: RED FLAGS & PENGESAHAN */}
+            {activeSection === 9 && (
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-bold text-slate-900">IX. INDIKATOR PELANGGARAN KHUSUS & PENGESAHAN</h3>
                   <p className="text-xs text-slate-500">Tanda Tangan & Berita Acara Lapangan</p>
                 </div>
 
-                {/* Red Flags Checkboxes */}
-                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
-                  <h4 className="text-xs font-bold text-rose-900 uppercase">
-                    Indikator Khusus / Red Flag Kerja Paksa:
-                  </h4>
+                {/* Verifikasi Kepatuhan Integritas & Bebas Kerja Paksa (Indikator Khusus 18 & 19) */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase">
+                      Verifikasi Integritas & Bebas Kerja Paksa (Indikator Khusus 18 & 19):
+                    </h4>
+                    <span className="text-[10px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
+                      Wajib Diverifikasi Pengawas
+                    </span>
+                  </div>
 
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.identityHoldFlag}
-                      onChange={(e) => setForm({ ...form, identityHoldFlag: e.target.checked })}
-                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 mt-0.5"
-                    />
-                    <div className="text-xs">
-                      <span className="font-bold text-rose-900">Terindikasi Penahanan Dokumen Asli Awak Kapal</span>
-                      <p className="text-[11px] text-rose-700">
-                        KTP, Buku Pelaut, atau Ijazah asli ditahan oleh pemilik/nakhoda tanpa hak. (Otomatis Risiko Tinggi)
-                      </p>
-                    </div>
-                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Indikator 18 */}
+                    <label className={`p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      (form.identityHoldVerified || form.integrityVerified) && !form.identityHoldFlag
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-medium'
+                        : 'bg-white border-slate-200 text-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={(form.identityHoldVerified || form.integrityVerified) && !form.identityHoldFlag}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setForm({
+                            ...form,
+                            identityHoldVerified: checked,
+                            identityHoldFlag: false,
+                            integrityVerified: checked && (form.arbitraryDeductionVerified || form.integrityVerified)
+                          });
+                        }}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 mt-0.5"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-slate-900">18. Bebas Penahanan Dokumen Asli Awak Kapal</span>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Telah diverifikasi langsung bahwa KTP, Buku Pelaut, atau Ijazah asli dipegang oleh ABK dan tidak ditahan majikan/agen.
+                        </p>
+                      </div>
+                    </label>
 
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.arbitraryDeductionFlag}
-                      onChange={(e) => setForm({ ...form, arbitraryDeductionFlag: e.target.checked })}
-                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 mt-0.5"
-                    />
-                    <div className="text-xs">
-                      <span className="font-bold text-rose-900">Terindikasi Pemotongan Upah Liar / Jeratan Utang</span>
-                      <p className="text-[11px] text-rose-700">
-                        Sistem bagi hasil tidak transparan atau ada pemotongan sepihak di luar kesepakatan.
-                      </p>
-                    </div>
-                  </label>
+                    {/* Indikator 19 */}
+                    <label className={`p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      (form.arbitraryDeductionVerified || form.integrityVerified) && !form.arbitraryDeductionFlag
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-medium'
+                        : 'bg-white border-slate-200 text-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={(form.arbitraryDeductionVerified || form.integrityVerified) && !form.arbitraryDeductionFlag}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setForm({
+                            ...form,
+                            arbitraryDeductionVerified: checked,
+                            arbitraryDeductionFlag: false,
+                            integrityVerified: checked && (form.identityHoldVerified || form.integrityVerified)
+                          });
+                        }}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 mt-0.5"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-slate-900">19. Bebas Potongan Upah Liar / Jeratan Utang</span>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Telah diverifikasi langsung bahwa tidak ada potongan upah di luar kesepakatan tertulis dan bebas jeratan utang rekrutmen.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Signature and Officers info */}
@@ -1609,7 +2409,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                     <span className="hidden sm:inline">Sebelumnya</span>
                   </button>
                 )}
-                {activeSection < 8 && (
+                {activeSection < 9 && (
                   <button
                     type="button"
                     onClick={() => setActiveSection(activeSection + 1)}
@@ -1805,13 +2605,17 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">
                     Jenis Alat Penangkapan Ikan (API)
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Purse Seine, Tuna Longline, Bouke Ami"
+                  <select
                     value={newGearType}
                     onChange={(e) => setNewGearType(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-white text-slate-900"
-                  />
+                    className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-white text-slate-900 font-medium"
+                  >
+                    {STANDARD_GEAR_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

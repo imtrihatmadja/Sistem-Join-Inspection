@@ -772,28 +772,46 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                   )}
                 </div>
 
-                {/* Bagian 4: DAFTAR CATATAN CHECKLIST SESUAI INDIKATOR PENGAWASAN */}
+                {/* Bagian 4: DAFTAR CATATAN CHECKLIST SESUAI 19 INDIKATOR PENGAWASAN */}
                 <div className="space-y-2.5 print-avoid-break">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md">
                     <div className="flex items-center gap-1.5">
                       <ClipboardCheck className="w-3.5 h-3.5 text-blue-600" />
-                      <span>IV. DAFTAR LENGKAP CATATAN CHECKLIST PER INDIKATOR PENGAWASAN (I - VIII)</span>
+                      <span>IV. DAFTAR LENGKAP CATATAN CHECKLIST PER INDIKATOR PENGAWASAN (19 INDIKATOR & BAGIAN I - IX)</span>
                     </div>
                     <span className="text-[11px] font-sans font-normal text-slate-500 normal-case">
-                      Rekam Catatan Pemeriksa Lapangan
+                      Rekam Verifikasi & Catatan Pemeriksa Lapangan
                     </span>
                   </div>
 
                   <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 text-xs">
                     
-                    {/* Indikator 8: PKL */}
+                    {/* 1. Indikator 7: WLKP */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 8: Kepemilikan Dokumen Perjanjian Kerja Laut (PKL)
+                          1. Wajib Lapor Ketenagakerjaan Perusahaan (WLKP - Indikator No. 7)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.hasPklAgreement === true ? '✓ Ada PKL Tertulis Lengkap' : checklist?.hasPklAgreement === false ? '✗ Tidak Ada PKL' : 'Sebagian'}
+                          Status: {checklist?.hasWlkp === true || checklist?.wlkpStatus === 'ADA' ? '✓ Ada Bukti WLKP Aktif' : checklist?.hasWlkp === false || checklist?.wlkpStatus === 'TIDAK_ADA' ? '✗ Belum Lapor WLKP' : 'Belum Dicek'}
+                          {checklist?.wlkpNumber ? ` (No: ${checklist.wlkpNumber})` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.wlkpExpiryDate ? `Masa Berlaku s/d ${checklist.wlkpExpiryDate}. ` : ''}
+                        {checklist?.noteIndicatorWlkp || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* 2. Indikator 8: PKL */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          2. Kepemilikan Dokumen Perjanjian Kerja Laut (PKL oleh Awak Kapal - Indikator No. 8)
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasPklAgreement === true || checklist?.pklStatus === 'SEMUA_BER_PKL' ? '✓ Ada PKL Tertulis Lengkap' : checklist?.hasPklAgreement === false || checklist?.pklStatus === 'TIDAK_ADA_PKL' ? '✗ Tidak Ada PKL' : 'Sebagian Ber-PKL'}
                           {checklist?.pklDurationMonths ? ` (${checklist.pklDurationMonths})` : ''}
                         </span>
                       </div>
@@ -803,14 +821,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 9: Salinan PKL */}
+                    {/* 3. Indikator 9: Salinan PKL */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 9: Salinan Asli PKL Dipegang oleh Awak Kapal
+                          3. Salinan Asli PKL Dipegang oleh Awak Kapal (Indikator No. 9)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.pklHeldByCrew === true ? '✓ Dipegang ABK' : checklist?.pklHeldByCrew === false ? '✗ Salinan Ditahan' : 'Belum Dicek'}
+                          Status: {checklist?.pklHeldByCrew === true ? '✓ Dipegang Langsung oleh ABK' : checklist?.pklHeldByCrew === false ? '✗ Salinan Ditahan Majikan/Agen' : 'Belum Dicek'}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -819,14 +837,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 10: Skema Pengupahan */}
+                    {/* 4. Indikator 10: Skema Pengupahan */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 10: Sistem & Struktur Pengupahan Awak Kapal
+                          4. Sistem & Struktur Pengupahan Awak Kapal (Indikator No. 10)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Skema: {checklist?.pklWageScheme === 'BULANAN' ? 'Gaji Pokok Bulanan' : checklist?.pklWageScheme === 'BAGI_HASIL' ? 'Bagi Hasil Murni' : checklist?.pklWageScheme === 'KOMBINASI' ? 'Kombinasi Gaji & Bagi Hasil' : '-'}
+                          Skema: {checklist?.pklWageScheme === 'BULANAN' ? 'Gaji Pokok Bulanan' : checklist?.pklWageScheme === 'BAGI_HASIL' ? 'Bagi Hasil Murni' : checklist?.pklWageScheme === 'KOMBINASI' ? 'Kombinasi Gaji & Bagi Hasil' : (checklist?.pklWageScheme || '-')}
                           {checklist?.monthlyBasicWage ? ` | Upah Pokok: ${checklist.monthlyBasicWage}` : ''}
                           {checklist?.profitSharingRatio ? ` | Rasio Bagi Hasil: ${checklist.profitSharingRatio}` : ''}
                           {checklist?.overtimeOrBonusPay ? ` | Lembur/Premi: ${checklist.overtimeOrBonusPay}` : ''}
@@ -838,14 +856,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 11: Jaminan Upah Minimum & Slip Gaji */}
+                    {/* 5. Indikator 11: Jaminan Upah Minimum & Slip Gaji */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 11: Slip Gaji Resmi & Bebas Pemotongan Upah Liar
+                          5. Jaminan Upah Minimum & Slip Upah Resmi (Indikator No. 11)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Slip Upah: {checklist?.hasSalarySlips ? '✓ Ada Slip' : '✗ Tidak Ada'} | Potongan Upah: {checklist?.hasWageDeductions ? '✗ Ada Potongan Liar' : '✓ Bebas Potongan'}
+                          Slip Upah: {checklist?.hasSalarySlips ? '✓ Ada Slip Resmi' : '✗ Tidak Ada Slip Tertulis'} | Potongan Upah: {checklist?.hasWageDeductions ? '✗ Ada Potongan Liar' : '✓ Bebas Potongan'}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -854,11 +872,11 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 12: BPJS Ketenagakerjaan */}
+                    {/* 6. Indikator 12: BPJS Ketenagakerjaan */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 12: Kepesertaan BPJS Ketenagakerjaan Awak Kapal
+                          6. Kepesertaan BPJS Ketenagakerjaan Awak Kapal (Indikator No. 12)
                         </span>
                         <span className="font-semibold text-slate-600">
                           Status: {checklist?.hasBpjsKetenagakerjaan === true ? '✓ Terdaftar Aktif' : checklist?.hasBpjsKetenagakerjaan === false ? '✗ Tidak Terdaftar' : '-'}
@@ -871,16 +889,16 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 13: BPJS Kesehatan & Asuransi Tambahan */}
+                    {/* 7. Indikator 13: BPJS Kesehatan & Asuransi Tambahan */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 13: BPJS Kesehatan / Asuransi Tambahan Maritim & Operasional API
+                          7. Kepesertaan BPJS Kesehatan / Asuransi Tambahan Maritim (Indikator No. 13)
                         </span>
                         <span className="font-semibold text-slate-600">
                           BPJS Kes: {checklist?.hasBpjsKesehatan ? '✓ Aktif' : '✗ Belum'} | Asuransi Swasta: {checklist?.hasPrivateInsurance ? '✓ Ada' : '-'}
                           {checklist?.fishingOperationsPerTrip ? ` | Operasi API: ${checklist.fishingOperationsPerTrip}` : ''}
-                          {checklist?.dailyFishingOperationHours ? ` | Durasi: ${checklist.dailyFishingOperationHours}` : ''}
+                          {checklist?.dailyFishingOperationHours ? ` | Durasi Operasi: ${checklist.dailyFishingOperationHours}` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -889,14 +907,15 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 16: Standar Fasilitas & Jam Istirahat */}
+                    {/* 8. Indikator 16.a: Jam Istirahat Terpenuhi */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 16: Standar Fasilitas Hidup & Jam Istirahat (ILO C188)
+                          8. Jam Istirahat Terpenuhi (Min. 10 Jam/Hari - Standar ILO C188 / Indikator No. 16.a)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Istirahat Min 10 Jam: {checklist?.dailyRestHoursCompliant ? '✓ Terpenuhi' : '✗ Kurang'} | Air Bersih: {checklist?.hasCleanWaterAccess ? '✓' : '✗'} | Makanan: {checklist?.hasSufficientFoodSupply ? '✓' : '✗'} | Kamar Tidur: {checklist?.hasAdequateAccommodation ? '✓' : '✗'}
+                          Status: {checklist?.dailyRestHoursCompliant ? '✓ Terpenuhi Sesuai Standar' : (Number(checklist?.restHoursPerDay) >= 10 ? '✓ Terpenuhi' : '✗ Belum Memenuhi (Kurang dari 10 Jam)')}
+                          {checklist?.restHoursPerDay ? ` (${checklist.restHoursPerDay} Jam/Hari)` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -905,30 +924,71 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 17: Lifejacket */}
+                    {/* 9. Indikator 16.b: Pasokan Air Bersih & Minum */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 17: Lifejacket / Pelampung Keselamatan Awak Kapal
+                          9. Pasokan Air Bersih & Air Minum Memadai (Indikator No. 16.b)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.hasLifeJacketsAvailable ? '✓ Tersedia Rasio 1:1' : '✗ Tidak Mencukupi'}
+                          Status: {checklist?.hasCleanWaterAccess ? '✓ Pasokan Memadai & Layak Minum' : '✗ Pasokan Air Tidak Memadai / Kualitas Kurang'}
+                          {checklist?.cleanWaterCapacityLiters ? ` | Kapasitas Tangki: ${checklist.cleanWaterCapacityLiters} Liter` : ''}
+                          {checklist?.mineralWaterGallonsCount ? ` | Galon Minum: ${checklist.mineralWaterGallonsCount} Galon` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
                         <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
-                        {checklist?.noteIndicator17 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                        {checklist?.cleanWaterSourceType ? `Sumber Air: ${checklist.cleanWaterSourceType}. ` : ''}
+                        {checklist?.noteIndicator16b || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
                       </div>
                     </div>
 
-                    {/* Indikator 18: APAR */}
+                    {/* 10. Indikator 16.c: Ketersediaan Bahan Makanan */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 18: Alat Pemadam Api Ringan (APAR) Siap Pakai
+                          10. Ketersediaan Bahan Makanan Layak Laut (Indikator No. 16.c)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.hasFireExtinguisherApar ? '✓ Siap Pakai & Berlaku' : '✗ Kadaluarsa / Tidak Ada'}
+                          Status: {checklist?.hasSufficientFoodSupply ? '✓ Bahan Makanan Cukup & Bergizi Layak' : '✗ Stok Makanan Tidak Mencukupi'}
+                          {checklist?.foodSupplyDays ? ` | Kesiapan untuk: ${checklist.foodSupplyDays} Hari Operasi` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator16c || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* 11. Indikator 16.d: Kondisi Kamar Tidur / Sanitasi */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          11. Kondisi Kamar Tidur & Sanitasi Bersih (Indikator No. 16.d)
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasAdequateAccommodation ? '✓ Akomodasi Kamar Tidur & Sanitasi Bersih Layak' : '✗ Kondisi Tidur / Sanitasi Kotor & Kurang Layak'}
+                          {checklist?.bunkBedCount ? ` | Tempat Tidur: ${checklist.bunkBedCount} Unit` : ''}
+                          {checklist?.toiletCount ? ` | Toilet/MCK: ${checklist.toiletCount} Unit` : ''}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator16d || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* 12. Indikator 18: Jenis APD yang Tersedia */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          12. Jenis Alat Pelindung Diri (APD) yang Tersedia (Indikator No. 18)
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.hasPpeAvailable || checklist?.hasLifeJacketsAvailable ? '✓ Tersedia APD Keselamatan' : '✗ Perlengkapan APD Tidak Tersedia / Kurang'}
+                          {checklist?.lifeJacketCount ? ` | Lifejacket: ${checklist.lifeJacketCount} pcs` : ''}
+                          {checklist?.lifebuoyCount ? ` | Lifebuoy: ${checklist.lifebuoyCount} pcs` : ''}
+                          {checklist?.otherPpeName ? ` | ${checklist.otherPpeName}: ${checklist.otherPpeCount || 0} pcs` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -937,14 +997,18 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 19: Kotak P3K */}
+                    {/* 13. Indikator 19: APAR */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 19: Kotak & Obat-obatan P3K Maritim Lengkap
+                          13. Alat Pemadam Api Ringan (APAR Siap Pakai - Indikator No. 19)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.hasFirstAidKit ? '✓ Lengkap' : '✗ Kurang / Kadaluarsa'}
+                          Status: {checklist?.hasFireExtinguisherApar ? '✓ Tersedia APAR Siap Pakai' : '✗ Tidak Ada APAR / Kadaluarsa'}
+                          {checklist?.aparPowderChecked ? ` | Powder: ${checklist.aparPowderCount || 1} tabung (${checklist.aparPowderCondition || 'Baik'})` : ''}
+                          {checklist?.aparCo2Checked ? ` | CO2: ${checklist.aparCo2Count || 1} tabung (${checklist.aparCo2Condition || 'Baik'})` : ''}
+                          {checklist?.aparFoamChecked ? ` | Foam: ${checklist.aparFoamCount || 1} tabung (${checklist.aparFoamCondition || 'Baik'})` : ''}
+                          {checklist?.aparOtherChecked ? ` | ${checklist.aparOtherName || 'Lainnya'}: ${checklist.aparOtherCount || 1} tabung` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -953,16 +1017,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 20: Buku Log Kecelakaan Kerja */}
+                    {/* 14. Indikator 20: Kotak Obat (P3K Fisik) */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 20: Buku Log Pencatatan Kecelakaan & Rekam Insiden
+                          14. Kotak Obat (P3K Fisik - Indikator No. 20)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Buku Log: {checklist?.hasAccidentLog ? '✓ Ada Buku Log' : '✗ Tidak Ada'}
-                          {checklist?.accidentConditions ? ` | Kondisi: ${checklist.accidentConditions}` : ''}
-                          {checklist?.accidentHistoryDetails ? ` | Kasus: ${checklist.accidentHistoryDetails}` : ''}
+                          Status: {checklist?.hasFirstAidBox ? `✓ Ada Kotak Fisik (${checklist?.firstAidBoxCondition || 'Baik & Kering'})` : '✗ Tidak Ada Kotak Obat Fisik'}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -971,17 +1033,16 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 21: Magang & Pekerja Anak */}
+                    {/* 15. Indikator 21: Obat-obatan P3K Maritim */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 21: Fasilitasi Siswa Magang & Larangan Pekerja Anak
+                          15. Obat-Obatan P3K Maritim (Indikator No. 21)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Magang: {checklist?.hasApprenticeOrStudents === true ? `✓ Ada (${checklist?.apprenticeCount || 1} Siswa)` : '✗ Tidak Ada'}
-                          {checklist?.apprenticeMajor ? ` | Jurusan: ${checklist.apprenticeMajor}` : ''}
-                          {checklist?.apprenticeSchoolOrigin ? ` | Sekolah: ${checklist.apprenticeSchoolOrigin}` : ''}
-                          {checklist?.apprenticeUnderAge ? ' | [PERINGATAN USIA ANAK]' : ''}
+                          Status: {checklist?.hasFirstAidMedicines || checklist?.hasFirstAidKit ? '✓ Tersedia Obat-Obatan Lengkap' : '✗ Obat Tidak Lengkap / Kadaluarsa'}
+                          {checklist?.firstAidMedicineExpiryStatus === 'KADALUARSA' ? ' | [PERINGATAN: TERDAPAT OBAT KADALUARSA]' : ' | Masa Berlaku Aman'}
+                          {checklist?.firstAidMedicineItems && checklist.firstAidMedicineItems.length > 0 ? ` (${checklist.firstAidMedicineItems.join(', ')})` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
@@ -990,35 +1051,115 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Indikator 22: Kompetensi AKP */}
+                    {/* 16. Indikator 23: Buku Log Kecelakaan Kerja */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 22: Bukti Sertifikat Kompetensi BST-F & Buku Pelaut
+                          16. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden (Indikator No. 23)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Sertifikat BST-F: {checklist?.crewWithBstCount ?? '-'} ABK | Buku Pelaut: {checklist?.crewWithSeamanBookCount ?? '-'} ABK
+                          Buku Log: {checklist?.hasAccidentLog ? '✓ Ada Buku Log Insiden' : '✗ Tidak Ada Buku Log'}
+                          {checklist?.accidentConditions ? ` | Potensi Bahaya: ${checklist.accidentConditions}` : ''}
+                          {checklist?.accidentHistoryDetails ? ` | Kasus Insiden: ${checklist.accidentHistoryDetails}` : ''}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
                         <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
-                        {checklist?.noteIndicator22 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                        {checklist?.noteIndicator23 || checklist?.noteIndicator20 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
                       </div>
                     </div>
 
-                    {/* Indikator 23: Catatan Khusus & Integritas Norma */}
+                    {/* 17. Indikator 24: Magang & Pekerja Anak */}
                     <div className="p-3 bg-white space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         <span className="font-bold text-slate-900">
-                          Indikator No. 23: Integritas Norma & Bebas Penahanan Dokumen Asli ABK
+                          17. Fasilitasi Siswa Magang & Bebas Pekerja Anak (Indikator No. 24)
                         </span>
                         <span className="font-semibold text-slate-600">
-                          Status: {checklist?.identityHoldFlag ? '✗ TERINDIKASI PENAHANAN DOKUMEN' : '✓ Bebas Penahanan Dokumen'}
+                          Status Siswa Magang: {checklist?.hasApprenticeOrStudents === true ? `Ada (${checklist?.apprenticeCount || 1} Siswa) - ${checklist?.apprenticeHasContract ? '✓ Ada Kontrak Resmi' : '✗ Tanpa Kontrak'}` : '✓ Tidak Ada Siswa Magang (Nihil)'}
+                          {checklist?.apprenticeMajor ? ` | Jurusan: ${checklist.apprenticeMajor}` : ''}
+                          {checklist?.apprenticeSchoolOrigin ? ` | Sekolah: ${checklist.apprenticeSchoolOrigin}` : ''}
+                          {checklist?.apprenticeUnderAge ? ' | [PERINGATAN: TERINDIKASI PEKERJA ANAK <18 TAHUN]' : ' | Bebas Pekerja Anak (<18 Tahun)'}
                         </span>
                       </div>
                       <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
-                        <span className="font-semibold text-slate-600">Catatan Tambahan Khusus: </span>
-                        {checklist?.additionalNotes || <span className="text-slate-400 italic">Tidak ada catatan tambahan.</span>}
+                        <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
+                        {checklist?.noteIndicator24 || checklist?.noteIndicator21 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}
+                      </div>
+                    </div>
+
+                    {/* 18. Indikator Khusus: Penahanan Dokumen Asli ABK */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          18. Indikator Khusus: Bebas Penahanan Dokumen Asli Awak Kapal
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.identityHoldFlag ? '✗ TERINDIKASI PENAHANAN DOKUMEN ASLI' : '✓ Terverifikasi Bebas Penahanan Dokumen'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Keterangan Verifikasi: </span>
+                        <span className={checklist?.identityHoldFlag ? 'text-rose-700 font-bold' : 'text-emerald-700 font-medium'}>
+                          {checklist?.identityHoldFlag 
+                            ? 'Ditemukan indikasi KTP, Buku Pelaut, atau Ijazah asli ditahan majikan/agen/nakhoda tanpa persetujuan tertulis yang sah.' 
+                            : 'Tim pemeriksa telah mengonfirmasi bahwa dokumen identitas asli dipegang langsung oleh masing-masing awak kapal.'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 19. Indikator Khusus: Pemotongan Upah Liar / Jeratan Utang */}
+                    <div className="p-3 bg-white space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                        <span className="font-bold text-slate-900">
+                          19. Indikator Khusus: Bebas Pemotongan Upah Liar / Jeratan Utang
+                        </span>
+                        <span className="font-semibold text-slate-600">
+                          Status: {checklist?.arbitraryDeductionFlag ? '✗ TERINDIKASI POTONGAN UPAL LIAR / JERATAN UTANG' : '✓ Terverifikasi Bebas Pemotongan Liar'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
+                        <span className="font-semibold text-slate-600">Keterangan Verifikasi: </span>
+                        <span className={checklist?.arbitraryDeductionFlag ? 'text-rose-700 font-bold' : 'text-emerald-700 font-medium'}>
+                          {checklist?.arbitraryDeductionFlag 
+                            ? 'Ditemukan potongan upah sepihak di luar kesepakatan tertulis atau mekanisme jeratan utang rekrutmen.' 
+                            : 'Tim pemeriksa telah mengonfirmasi tidak ada potongan upah sepihak dan bebas dari mekanisme jeratan utang.'}
+                        </span>
+                        {checklist?.additionalNotes && (
+                          <div className="mt-1 pt-1 border-t border-slate-200 text-slate-700">
+                            <span className="font-semibold text-slate-600">Catatan Khusus Tambahan: </span>
+                            {checklist.additionalNotes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Catatan Operasional Tambahan: Indikator 17, 22, 25 & Bagian VIII */}
+                    <div className="p-3 bg-slate-50 space-y-2 border-t-2 border-slate-300">
+                      <div className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                        Informasi Operasional Pendukung (Non-Scored / Pelengkap Berita Acara):
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-2 bg-white rounded border border-slate-200">
+                          <span className="font-bold text-slate-800">Indikator No. 17: Rencana Durasi Operasi Laut: </span>
+                          <span className="text-slate-700">{checklist?.plannedSeaDays ?? checklist?.daysAtSeaPerTrip ?? '-'} Hari</span>
+                        </div>
+                        <div className="p-2 bg-white rounded border border-slate-200">
+                          <span className="font-bold text-slate-800">Indikator No. 22: Keluhan Medis ABK: </span>
+                          <span className="text-slate-700">{checklist?.crewHealthComplaints || 'Nihil / Tidak ada'}</span>
+                        </div>
+                        <div className="p-2 bg-white rounded border border-slate-200">
+                          <span className="font-bold text-slate-800">Indikator No. 25-26: Sertifikat Kompetensi & Buku Pelaut: </span>
+                          <span className="text-slate-700">BST-F ({checklist?.crewWithBstCount ?? '-'} ABK) | Buku Pelaut ({checklist?.crewWithSeamanBookCount ?? '-'} ABK)</span>
+                        </div>
+                        <div className="p-2 bg-white rounded border border-slate-200">
+                          <span className="font-bold text-slate-800">Bagian VIII: Sistem Perekrutan: </span>
+                          <span className="text-slate-700">
+                            {checklist?.recruitmentRecruiterType || 'Mandiri'} 
+                            {checklist?.recruitmentAgentLicenseStatus ? ` (${checklist.recruitmentAgentLicenseStatus})` : ''}
+                          </span>
+                        </div>
                       </div>
                     </div>
 

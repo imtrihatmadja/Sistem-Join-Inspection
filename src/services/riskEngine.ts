@@ -216,11 +216,26 @@ export function calculateVesselRisk(
  * Calculates compliance and risk score directly from the Official Joint Labor Inspection Checklist
  * (TIM PENGAWASAN BERSAMA NORMA KETENAGAKERJAAN DI ATAS KAPAL IKAN)
  * 
- * Aturan Perhitungan:
- * - Bagian I (Data Umum & Identitas Kapal) TIDAK DIHITUNG dalam skor, KECUALI Indikator No. 7 (WLKP).
- * - Total Indikator Penilaian Kepatuhan = 14 Indikator (No. 7 WLKP + No. 8 s/d 20).
- * - Skor Kepatuhan (%) = (Jumlah Item Patuh / 14) * 100%
- * - Skor Risiko = 100 - Skor Kepatuhan (disesuaikan dengan Red Flags & Pelanggaran).
+ * 19 Indikator Kepatuhan Resmi:
+ * 1. 11. Wajib Lapor Ketenagakerjaan Perusahaan (WLKP)
+ * 2. 8. Kepemilikan Dokumen PKL oleh Awak Kapal
+ * 3. 9. Salinan PKL Dipegang oleh Awak Kapal
+ * 4. 10. Sistem Pengupahan Awak Kapal
+ * 5. 11. Jaminan Upah Minimum & Slip Upah Resmi
+ * 6. 12. Kepesertaan BPJS Ketenagakerjaan Awak Kapal
+ * 7. 13. Kepesertaan BPJS Kesehatan / Asuransi Tambahan
+ * 8. 16.a Jam Istirahat Terpenuhi (Min. 10 Jam/Hari)
+ * 9. 16.b Pasokan Air Bersih & Minum Memadai
+ * 10. 16.c Ketersediaan Bahan Makanan Layak
+ * 11. 16.d Kondisi Kamar Tidur / Sanitasi Bersih
+ * 12. 18. Jenis Alat Pelindung Diri (APD) yang Tersedia
+ * 13. 19. Alat Pemadam Api Ringan (APAR)
+ * 14. 20. Kotak Obat (P3K Fisik)
+ * 15. 21. Obat-Obatan P3K Maritim
+ * 16. 23. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden
+ * 17. 24. Fasilitasi Siswa Magang & Bebas Pekerja Anak
+ * 18. Indikator Khusus: Terindikasi Penahanan Dokumen Asli Awak Kapal (Bebas & Terverifikasi)
+ * 19. Indikator Khusus: Terindikasi Pemotongan Upah Liar / Jeratan Utang (Bebas & Terverifikasi)
  */
 export function calculateRiskFromOfficialChecklist(form: any): {
   riskEvaluation: RiskBreakdown;
@@ -232,21 +247,18 @@ export function calculateRiskFromOfficialChecklist(form: any): {
 } {
   const violations: InspectionViolation[] = [];
   const primaryRiskFactors: string[] = [];
-  const totalItemsCount = 14; // Hanya 14 indikator kepatuhan resmi yang dinilai (No. 7 WLKP s/d No. 20)
+  const totalItemsCount = 19; // Tepat 19 Indikator kepatuhan resmi
   let completedItemsCount = 0;
 
   const totalCrew = Math.max(0, form.totalCrewCount || (form.crewMaleCount || 0) + (form.crewFemaleCount || 0) || 0);
 
   // -------------------------------------------------------------
-  // BAGIAN I. DATA UMUM & IDENTITAS KAPAL
-  // (HANYA Indikator No. 7 WLKP yang dihitung skornya)
+  // 1. Wajib Lapor Ketenagakerjaan Perusahaan (WLKP) (Indikator 1)
   // -------------------------------------------------------------
-
-  // 7. Wajib Lapor Ketenagakerjaan Perusahaan (WLKP)
   if (form.hasWlkp === true || form.wlkpStatus === 'ADA') {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 7: Perusahaan belum memiliki bukti Lapor WLKP aktif.');
+    primaryRiskFactors.push('Indikator 1 (WLKP): Perusahaan pemilik belum memiliki bukti Lapor WLKP aktif.');
     if (form.hasWlkp === false) {
       violations.push({
         categoryId: 'VIO-DOC-WLKP',
@@ -260,14 +272,12 @@ export function calculateRiskFromOfficialChecklist(form: any): {
   }
 
   // -------------------------------------------------------------
-  // BAGIAN II. PERJANJIAN KERJA LAUT (PKL) & PENGUPAHAN (Indikator 8 - 11)
+  // 2. Kepemilikan Dokumen PKL oleh Awak Kapal (Indikator 8)
   // -------------------------------------------------------------
-
-  // 8. Kepemilikan Dokumen PKL oleh Awak Kapal
   if (form.hasPklAgreement === true || form.pklStatus === 'SEMUA_BER_PKL') {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 8: Awak kapal belum memiliki Perjanjian Kerja Laut (PKL) resmi.');
+    primaryRiskFactors.push('Indikator 2 (PKL): Awak kapal belum memiliki Perjanjian Kerja Laut (PKL) resmi.');
     if (form.hasPklAgreement === false || form.pklStatus === 'TIDAK_ADA_PKL') {
       violations.push({
         categoryId: 'VIO-DOC-01',
@@ -280,11 +290,13 @@ export function calculateRiskFromOfficialChecklist(form: any): {
     }
   }
 
-  // 9. Salinan PKL Dipegang oleh Awak Kapal
+  // -------------------------------------------------------------
+  // 3. Salinan PKL Dipegang oleh Awak Kapal (Indikator 9)
+  // -------------------------------------------------------------
   if (form.pklHeldByCrew === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 9: Salinan asli PKL tidak dipegang langsung oleh awak kapal.');
+    primaryRiskFactors.push('Indikator 3: Salinan asli PKL tidak dipegang langsung oleh awak kapal.');
     if (form.pklHeldByCrew === false) {
       violations.push({
         categoryId: 'VIO-DOC-PKLHELD',
@@ -297,18 +309,22 @@ export function calculateRiskFromOfficialChecklist(form: any): {
     }
   }
 
-  // 10. Sistem Pengupahan Awak Kapal (Bulanan / Bagi Hasil / Kombinasi)
+  // -------------------------------------------------------------
+  // 4. Sistem Pengupahan Awak Kapal (Indikator 10)
+  // -------------------------------------------------------------
   if (form.pklWageScheme && form.pklWageScheme.trim() !== '') {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 10: Sistem pengupahan (gaji pokok/bagi hasil) belum ditentukan.');
+    primaryRiskFactors.push('Indikator 4: Sistem pengupahan (gaji pokok/bagi hasil) belum disepakati.');
   }
 
-  // 11. Jaminan Upah Minimum & Bukti Slip Gaji / Bebas Potongan Liar
+  // -------------------------------------------------------------
+  // 5. Jaminan Upah Minimum & Slip Upah Resmi (Indikator 11)
+  // -------------------------------------------------------------
   if ((form.hasSalarySlips === true || form.hasProductionSharingProof === true) && form.hasWageDeductions !== true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 11: Belum ada slip upah tertulis atau terindikasi potongan tidak wajar.');
+    primaryRiskFactors.push('Indikator 5: Belum ada slip upah resmi atau terindikasi potongan tidak wajar.');
     if (form.hasWageDeductions === true) {
       violations.push({
         categoryId: 'VIO-WAGE-01',
@@ -322,14 +338,12 @@ export function calculateRiskFromOfficialChecklist(form: any): {
   }
 
   // -------------------------------------------------------------
-  // BAGIAN III. JAMINAN SOSIAL KETENAGAKERJAAN & KESEHATAN (Indikator 12 - 13)
+  // 6. Kepesertaan BPJS Ketenagakerjaan Awak Kapal (Indikator 12)
   // -------------------------------------------------------------
-
-  // 12. Kepesertaan BPJS Ketenagakerjaan Awak Kapal
   if (form.hasBpjsKetenagakerjaan === true || form.bpjsTkProgram === 'PU_4_PROGRAM' || form.bpjsTkProgram === 'PU_3_PROGRAM' || form.bpjsTkProgram === 'BPU_2_PROGRAM') {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 12: Awak kapal belum terdaftar aktif dalam BPJS Ketenagakerjaan.');
+    primaryRiskFactors.push('Indikator 6 (BPJS TK): Awak kapal belum terdaftar aktif dalam BPJS Ketenagakerjaan.');
     if (form.hasBpjsKetenagakerjaan === false) {
       violations.push({
         categoryId: 'VIO-K3-01',
@@ -342,65 +356,107 @@ export function calculateRiskFromOfficialChecklist(form: any): {
     }
   }
 
-  // 13. Kepesertaan BPJS Kesehatan / Asuransi Tambahan
+  // -------------------------------------------------------------
+  // 7. Kepesertaan BPJS Kesehatan / Asuransi Tambahan (Indikator 13)
+  // -------------------------------------------------------------
   if (form.hasBpjsKesehatan === true || form.hasPrivateInsurance === true || form.bpjsKesStatus === 'AKTIF_SEMUA') {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 13: Belum terdaftar dalam BPJS Kesehatan atau asuransi maritim aktif.');
+    primaryRiskFactors.push('Indikator 7: Belum terdaftar dalam BPJS Kesehatan atau asuransi maritim aktif.');
   }
 
   // -------------------------------------------------------------
-  // BAGIAN IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS (Indikator 14)
+  // 8. 16.a Jam Istirahat Terpenuhi (Min. 10 Jam/Hari)
   // -------------------------------------------------------------
-
-  // 14. Jam Istirahat Harian Sesuai Standar (Min 10 Jam/Hari - ILO C188) & Fasilitas Layak
-  if (form.dailyRestHoursCompliant === true || (form.hasCleanWaterAccess === true && form.hasSufficientFoodSupply === true)) {
+  if (form.dailyRestHoursCompliant === true || (Number(form.restHoursPerDay) >= 10 && form.dailyRestHoursCompliant !== false)) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 14: Jam istirahat atau pasokan fasilitas kapal belum memenuhi standar ILO C188.');
+    primaryRiskFactors.push('Indikator 8 (16.a): Jam istirahat harian belum memenuhi standar minimum 10 jam/hari.');
   }
 
   // -------------------------------------------------------------
-  // BAGIAN V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM (Indikator 15 - 18)
+  // 9. 16.b Pasokan Air Bersih & Minum Memadai
   // -------------------------------------------------------------
-
-  // 15. Ketersediaan Lifejacket / Pelampung Sesuai Jumlah ABK (1:1)
-  if (form.hasLifeJacketsAvailable === true || form.ppeAdequacy === 'CUKUP') {
+  if (form.hasCleanWaterAccess === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 15: Lifejacket/pelampung keselamatan belum mencukupi untuk seluruh ABK.');
+    primaryRiskFactors.push('Indikator 9 (16.b): Pasokan air bersih dan air minum di atas kapal belum memadai.');
   }
 
-  // 16. Alat Pemadam Api Ringan (APAR) Siap Pakai
-  if (form.hasFireExtinguisherApar === true) {
+  // -------------------------------------------------------------
+  // 10. 16.c Ketersediaan Bahan Makanan Layak
+  // -------------------------------------------------------------
+  if (form.hasSufficientFoodSupply === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 16: Alat Pemadam Api Ringan (APAR) tidak tersedia / kadaluarsa.');
+    primaryRiskFactors.push('Indikator 10 (16.c): Ketersediaan pasokan bahan makanan layak laut belum mencukupi.');
   }
 
-  // 17. Kotak & Obat-obatan P3K Maritim Lengkap
-  if (form.hasFirstAidKit === true || form.firstAidAvailable === 'LENGKAP') {
+  // -------------------------------------------------------------
+  // 11. 16.d Kondisi Kamar Tidur / Sanitasi Bersih
+  // -------------------------------------------------------------
+  if (form.hasAdequateAccommodation === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 17: Kotak P3K atau obat darurat pelayaran belum tersedia lengkap.');
+    primaryRiskFactors.push('Indikator 11 (16.d): Kondisi akomodasi kamar tidur / sanitasi kapal belum bersih dan layak.');
   }
 
-  // 18. Buku Log Pencatatan Insiden & Kecelakaan Kerja
+  // -------------------------------------------------------------
+  // 12. 18. Jenis Alat Pelindung Diri (APD) yang Tersedia
+  // -------------------------------------------------------------
+  const hasValidPpe = form.hasPpeAvailable === true || form.hasLifeJacketsAvailable === true || (Number(form.lifeJacketCount) > 0 && form.hasLifeJacketsAvailable !== false);
+  if (hasValidPpe) {
+    completedItemsCount++;
+  } else {
+    primaryRiskFactors.push('Indikator 12 (18. APD): Perlengkapan APD / Pelampung keselamatan belum mencukupi.');
+  }
+
+  // -------------------------------------------------------------
+  // 13. 19. Alat Pemadam Api Ringan (APAR)
+  // -------------------------------------------------------------
+  if (form.hasFireExtinguisherApar === true || form.aparPowderChecked === true || form.aparCo2Checked === true || form.aparFoamChecked === true || form.aparOtherChecked === true) {
+    completedItemsCount++;
+  } else {
+    primaryRiskFactors.push('Indikator 13 (19. APAR): Alat Pemadam Api Ringan tidak tersedia atau kondisi kadaluarsa/rusak.');
+  }
+
+  // -------------------------------------------------------------
+  // 14. 20. Kotak Obat (P3K Fisik)
+  // -------------------------------------------------------------
+  if (form.hasFirstAidBox === true || (form.hasFirstAidKit === true && form.firstAidBoxCondition !== 'TIDAK_LAYAK')) {
+    completedItemsCount++;
+  } else {
+    primaryRiskFactors.push('Indikator 14 (20. Kotak P3K): Kotak obat fisik tidak tersedia atau rusak/tidak layak.');
+  }
+
+  // -------------------------------------------------------------
+  // 15. 21. Obat-Obatan P3K Maritim
+  // -------------------------------------------------------------
+  if (form.hasFirstAidMedicines === true || form.firstAidAvailable === 'LENGKAP') {
+    completedItemsCount++;
+  } else {
+    primaryRiskFactors.push('Indikator 15 (21. Obat P3K): Stok obat-obatan P3K maritim tidak lengkap / kadaluarsa.');
+  }
+
+  // -------------------------------------------------------------
+  // 16. 23. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden
+  // -------------------------------------------------------------
   if (form.hasAccidentLog === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 18: Buku log kecelakaan kerja belum disediakan di kapal.');
+    primaryRiskFactors.push('Indikator 16 (23. Log Insiden): Buku log pencatatan kecelakaan kerja belum disediakan.');
   }
 
   // -------------------------------------------------------------
-  // BAGIAN VI. FASILITASI MAGANG & LARANGAN PEKERJA ANAK (Indikator 19)
+  // 17. 24. Fasilitasi Siswa Magang & Bebas Pekerja Anak
   // -------------------------------------------------------------
+  const isMagangVerified = (form.hasApprenticeOrStudents === false) || 
+    (form.hasApprenticeOrStudents === true && form.apprenticeHasContract === true && form.apprenticeUnderAge !== true);
 
-  // 19. Fasilitasi Siswa Magang Resmi & Bebas Pekerja Anak (<18 Tahun)
-  if (form.hasApprenticeOrStudents === false || (form.hasApprenticeOrStudents === true && form.apprenticeHasContract === true && form.apprenticeUnderAge === false)) {
+  if (isMagangVerified) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 19: Status pemagangan atau perlindungan pekerja anak belum terverifikasi.');
+    primaryRiskFactors.push('Indikator 17 (24. Magang/Anak): Status pemagangan atau perlindungan pekerja anak belum diverifikasi.');
     if (form.apprenticeUnderAge === true) {
       violations.push({
         categoryId: 'VIO-CHILD-01',
@@ -408,35 +464,54 @@ export function calculateRiskFromOfficialChecklist(form: any): {
         title: 'Indikasi Pekerja Anak di Bawah Umur',
         severity: 'CRITICAL',
         scoreWeight: 30,
-        notes: 'Terdapat awak kapal di bawah usia 18 tahun tanpa perlindungan khusus.'
+        notes: 'Terdapat awak kapal di bawah usia 18 tahun di pekerjaan berbahaya.'
       });
     }
   }
 
   // -------------------------------------------------------------
-  // BAGIAN VII. BUKTI KOMPETENSI AWAK KAPAL (Indikator 20)
+  // 18. Indikator Khusus: Terindikasi Penahanan Dokumen Asli Awak Kapal
+  // Wajib diverifikasi pengawas dan bebas dari pelanggaran penahanan dokumen
   // -------------------------------------------------------------
+  const isIdentityHoldVerified = (form.identityHoldVerified === true || form.integrityVerified === true || form.freedomFromForcedLaborConfirmed === true) && 
+    form.identityHoldFlag !== true;
 
-  // 20. Kepemilikan Sertifikat BST-F / Buku Pelaut / Sertifikasi Kompetensi
-  const hasCompetency = (form.competenciesAvailable && form.competenciesAvailable.length > 0 && form.competenciesAvailable.some((c: string) => c.trim() !== '')) ||
-    (form.crewWithBstCount && form.crewWithBstCount > 0) ||
-    (form.crewWithSeamanBookCount && form.crewWithSeamanBookCount > 0);
-
-  if (hasCompetency) {
+  if (isIdentityHoldVerified) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 20: Bukti sertifikat kompetensi BST-F atau Buku Pelaut belum terdata.');
+    if (form.identityHoldFlag === true) {
+      primaryRiskFactors.push('Indikator 18 (Khusus): Terindikasi penahanan dokumen identitas/ijazah asli awak kapal.');
+    } else {
+      primaryRiskFactors.push('Indikator 18 (Khusus): Verifikasi kebebasan penahanan dokumen asli belum dikonfirmasi pengawas.');
+    }
   }
 
   // -------------------------------------------------------------
-  // PERHITUNGAN SKOR KEPATUHAN & SKOR RISIKO PROPORSIONAL (14 INDIKATOR)
+  // 19. Indikator Khusus: Terindikasi Pemotongan Upah Liar / Jeratan Utang
+  // Wajib diverifikasi pengawas dan bebas dari pemotongan sepihak / jeratan utang
+  // -------------------------------------------------------------
+  const isWageDeductionVerified = (form.arbitraryDeductionVerified === true || form.integrityVerified === true || form.freedomFromForcedLaborConfirmed === true) && 
+    form.arbitraryDeductionFlag !== true;
+
+  if (isWageDeductionVerified) {
+    completedItemsCount++;
+  } else {
+    if (form.arbitraryDeductionFlag === true) {
+      primaryRiskFactors.push('Indikator 19 (Khusus): Terindikasi pemotongan upah sepihak / jeratan utang.');
+    } else {
+      primaryRiskFactors.push('Indikator 19 (Khusus): Verifikasi kebebasan potongan upah liar/jeratan utang belum dikonfirmasi pengawas.');
+    }
+  }
+
+  // -------------------------------------------------------------
+  // PERHITUNGAN SKOR KEPATUHAN & SKOR RISIKO PROPORSIONAL (19 INDIKATOR)
   // -------------------------------------------------------------
   
-  // Nilai Kepatuhan (%) = (completedItemsCount / 14) * 100
+  // Nilai Kepatuhan (%) = (completedItemsCount / 19) * 100
   const complianceRatio = Math.max(0, Math.min(1, completedItemsCount / totalItemsCount));
   const complianceRate = Math.round(complianceRatio * 100);
 
-  // Skor Risiko (0 - 100): Jika Kepatuhan 100%, Skor Risiko = 0.
+  // Skor Risiko (0 - 100): Jika Kepatuhan 0/19 (0%), Skor Risiko = 100 (HIGH). Jika Kepatuhan 19/19 (100%), Skor Risiko = 0 (LOW).
   let riskScore = 100 - complianceRate;
 
   // Jika ada Red Flag Kritis (Penahanan Dokumen Asli atau Pekerja Anak)
@@ -474,7 +549,7 @@ export function calculateRiskFromOfficialChecklist(form: any): {
   }
 
   if (primaryRiskFactors.length === 0) {
-    primaryRiskFactors.push('Seluruh 14 indikator kepatuhan norma ketenagakerjaan dan K3 telah terpenuhi dengan baik (100% Kepatuhan).');
+    primaryRiskFactors.push('Seluruh 19 indikator kepatuhan norma ketenagakerjaan dan K3 telah terpenuhi dengan baik (100% Kepatuhan).');
   }
 
   const bstCount = form.crewWithBstCount ?? 0;
@@ -490,7 +565,7 @@ export function calculateRiskFromOfficialChecklist(form: any): {
     hasFairWageAgreement: form.hasWageDeductions !== true && form.arbitraryDeductionFlag !== true,
     hasProperRestHours: form.dailyRestHoursCompliant === true || Number(form.restHoursPerDay) >= 10,
     hasAdequateFoodWater: form.hasCleanWaterAccess === true && form.hasSufficientFoodSupply === true,
-    hasFirstAidKits: form.hasFirstAidKit === true && form.hasLifeJacketsAvailable === true,
+    hasFirstAidKits: (form.hasFirstAidBox === true || form.hasFirstAidMedicines === true || form.hasFirstAidKit === true) && (form.hasLifeJacketsAvailable === true || form.hasPpeAvailable === true),
     identityHoldFlag: !!form.identityHoldFlag
   };
 
@@ -498,8 +573,8 @@ export function calculateRiskFromOfficialChecklist(form: any): {
     score: riskScore, // 0 - 100
     riskLevel,
     documentScorePenalty: Math.round((1 - (completedItemsCount / totalItemsCount)) * 50),
-    welfareScorePenalty: Math.round((1 - (completedItemsCount / totalItemsCount)) * 50),
-    violationScorePenalty: violations.length * 5,
+    welfareScorePenalty: Math.round((1 - (completedItemsCount / totalItemsCount)) * 30),
+    violationScorePenalty: Math.round((1 - (completedItemsCount / totalItemsCount)) * 20),
     historicalPenalty: 0,
     primaryRiskFactors,
     recommendation,

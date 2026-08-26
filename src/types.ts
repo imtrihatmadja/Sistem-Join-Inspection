@@ -93,49 +93,116 @@ export interface OfficialChecklistForm {
 
   // IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS
   daysAtSeaPerTrip?: number; // Estimasi hari melaut per trip
+  plannedSeaDays?: number | string; // 17. Lama rencana operational di laut (satuan hari - informasi)
   apiOperationsPerTrip?: number;
   apiOperatingHoursPerDay?: number;
-  dailyRestHoursCompliant?: boolean; // 14. Standar Jam Istirahat (Min. 10 Jam/Hari - ILO C188) & Fasilitas Layak
+  dailyRestHoursCompliant?: boolean; // 16. Standar Jam Istirahat (Min. 10 Jam/Hari - ILO C188)
   restHoursPerDay?: number;
-  hasCleanWaterAccess?: boolean;
-  hasSufficientFoodSupply?: boolean;
-  hasAdequateAccommodation?: boolean;
+  hasCleanWaterAccess?: boolean; // Pasokan Air Bersih & Minum Memadai
+  hasSufficientFoodSupply?: boolean; // Ketersediaan Bahan Makanan Layak
+  hasAdequateAccommodation?: boolean; // Kondisi Kamar Tidur / Sanitasi Bersih
 
   // V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM
-  hasLifeJacketsAvailable?: boolean; // 15. Lifejacket / Pelampung Sesuai Jumlah ABK (1:1)
-  lifeJacketCount?: number;
+  // 18. Jenis APD yang tersedia (Scored)
+  hasPpeAvailable?: boolean;
+  hasLifeJacketsAvailable?: boolean;
+  lifeJacketCount?: number | string;
+  lifebuoyCount?: number | string;
+  otherPpeName?: string;
+  otherPpeCount?: number | string;
   ppeTypesAvailable?: string[];
   ppeSetCount?: number;
   ppeAdequacy?: 'CUKUP' | 'KURANG' | 'TIDAK_ADA';
-  hasFireExtinguisherApar?: boolean; // 16. APAR Siap Pakai & Tidak Kadaluarsa
-  hasFirstAidKit?: boolean; // 17. Kotak & Obat P3K Maritim Lengkap
+
+  // 19. Alat Pemadam Api Ringan (APAR) (Scored)
+  hasFireExtinguisherApar?: boolean;
+  aparPowderChecked?: boolean;
+  aparPowderCount?: number | string;
+  aparPowderExpiry?: string;
+  aparPowderCondition?: 'BAIK' | 'KOROSI' | 'BERLUBANG_RUSAK' | 'TEKANAN_TURUN';
+  
+  aparCo2Checked?: boolean;
+  aparCo2Count?: number | string;
+  aparCo2Expiry?: string;
+  aparCo2Condition?: 'BAIK' | 'KOROSI' | 'BERLUBANG_RUSAK' | 'TEKANAN_TURUN';
+  
+  aparFoamChecked?: boolean;
+  aparFoamCount?: number | string;
+  aparFoamExpiry?: string;
+  aparFoamCondition?: 'BAIK' | 'KOROSI' | 'BERLUBANG_RUSAK' | 'TEKANAN_TURUN';
+  
+  aparOtherChecked?: boolean;
+  aparOtherName?: string;
+  aparOtherCount?: number | string;
+  aparOtherExpiry?: string;
+  aparOtherCondition?: 'BAIK' | 'KOROSI' | 'BERLUBANG_RUSAK' | 'TEKANAN_TURUN';
+
+  // 20. Kotak Obat P3K Maritim (Scored)
+  hasFirstAidBox?: boolean;
+  firstAidBoxCondition?: 'BAIK_BERSIH' | 'RUSAK_KOTOR' | 'TIDAK_LAYAK';
+
+  // 21. Obat-Obatan P3K Maritim (Scored)
+  hasFirstAidMedicines?: boolean;
+  hasFirstAidKit?: boolean; // compatibility fallback
   firstAidAvailable?: 'LENGKAP' | 'KURANG_LENGKAP' | 'TIDAK_ADA';
-  hasAccidentLog?: boolean; // 18. Buku Log Pencatatan Kecelakaan Kerja
-  hasPersonalProtectiveEquipment?: boolean;
-  nearMissIncidentsPerTrip?: number; // a. Jumlah Kondisi hampir kecelakaan kerja per trip
-  workAccidentsPerTrip?: number; // b. Jumlah kasus kecelakaan kerja per trip
+  firstAidMedicineExpiryStatus?: 'MASIH_BERLAKU' | 'KADALUARSA' | 'SEBAGIAN_KADALUARSA';
+  firstAidMedicineItems?: string[];
+
+  // 22. Keluhan Kesehatan ABK (Informasi)
   crewHealthComplaints?: string;
+  healthComplaintNotes?: string;
+
+  // 23. Buku Log Pencatatan Kecelakaan Kerja (Scored)
+  hasAccidentLog?: boolean;
+  hasPersonalProtectiveEquipment?: boolean;
+  accidentConditions?: string; // Kondisi potensi bahaya kecelakaan
+  accidentHistoryDetails?: string; // Kasus kecelakaan yang pernah terjadi
+  nearMissIncidentsPerTrip?: number;
+  workAccidentsPerTrip?: number;
   nearMissIncidents?: string;
 
   // VI. FASILITASI MAGANG & LARANGAN PEKERJA ANAK
-  hasApprenticeOrStudents?: boolean | null; // 19. Fasilitasi Siswa Magang & Bebas Pekerja Anak
+  // 24. Fasilitasi Siswa Magang & Bebas Pekerja Anak (Scored)
+  hasApprenticeOrStudents?: boolean | null;
   apprenticeCount?: number;
+  apprenticeMajor?: string;
+  apprenticeSchoolOrigin?: string;
   apprenticeHasContract?: boolean;
   apprenticeUnderAge?: boolean; // Indikasi usia < 18 tahun di pekerjaan berbahaya
-  internMajor?: string; // 1. Jurusan / Program Studi Magang
-  internSchoolOrigin?: string; // 2. Asal Sekolah / Perguruan Tinggi Siswa Magang
+  internMajor?: string;
+  internSchoolOrigin?: string;
   hasInternship?: boolean;
   internCount?: number;
   internHasPpeAndInsurance?: boolean;
 
   // VII. BUKTI KOMPETENSI AWAK KAPAL PERIKANAN (AKP)
-  crewWithBstCount?: number; // 20. Sertifikat BST-F
-  crewWithSeamanBookCount?: number; // Buku Pelaut (Seaman Book) Resmi
+  // 25. Sertifikat BST-F (Scored)
+  crewWithBstCount?: number;
+  // 26. Buku Pelaut (Seaman Book) Resmi (Scored)
+  crewWithSeamanBookCount?: number;
+  // 27. Bukti Sertifikat Keahlian / Kompetensi AKP (Scored)
   competenciesAvailable?: string[];
 
-  // VIII. INTEGRITAS & RED FLAGS KERJA PAKSA
-  identityHoldFlag?: boolean; // Bebas Penahanan Dokumen Asli ABK
-  arbitraryDeductionFlag?: boolean;
+  // VIII. SISTEM PEREKRUTAN AWAK KAPAL (Informasi - Tidak Masuk Penilaian Skor)
+  recruitmentVacantJobInfo?: string; // a. Informasi lowongan kerja (sumber info, perantara, dsb)
+  recruitmentRecruiterType?: 'PERUSAHAAN' | 'NAHKODA' | 'PEMILIK_KAPAL' | 'MANDIRI' | 'AGEN' | ''; // b. Pilihan pihak perekrut
+  recruitmentAgentLicenseStatus?: 'BERIZIN' | 'TIDAK_BERIZIN' | ''; // Pilihan agen berizin / agen tidak berizin
+  recruitmentRecruiterName?: string; // Nama perekrut
+  recruitmentRecruiterAddress?: string; // Alamat perekrut
+  recruitmentRecruiterPhone?: string; // No telepon / kontak perekrut
+  recruitmentIsHoused?: boolean | null; // c. Mekanisme perekrutan: Apakah ditampung sebelum berangkat?
+  recruitmentHousingLocation?: string; // Lokasi / alamat penampungan jika ditampung
+  recruitmentHousingCondition?: string; // Kondisi tempat penampungan
+  recruitmentFeeOrDeduction?: string; // Biaya rekrutmen / pungutan awal jika ada
+  recruitmentOtherInfo?: string; // Informasi lainnya seputar mekanisme perekrutan
+
+  // IX. INTEGRITAS & RED FLAGS KERJA PAKSA (Indikator 18 & 19 Khusus)
+  identityHoldVerified?: boolean; // Konfirmasi verifikasi pengawas: Bebas Penahanan Dokumen Asli ABK (Indikator 18)
+  arbitraryDeductionVerified?: boolean; // Konfirmasi verifikasi pengawas: Bebas Pemotongan Upah Liar / Jeratan Utang (Indikator 19)
+  integrityVerified?: boolean; // Konfirmasi umum verifikasi integritas oleh pengawas
+  freedomFromForcedLaborConfirmed?: boolean;
+  identityHoldFlag?: boolean; // Terindikasi Penahanan Dokumen Asli ABK (Red Flag Kritis)
+  arbitraryDeductionFlag?: boolean; // Terindikasi Pemotongan Upah Liar / Jeratan Utang (Red Flag Kritis)
   additionalNotes?: string;
 
   // Catatan Khusus Pemeriksa per Indikator
@@ -146,12 +213,16 @@ export interface OfficialChecklistForm {
   noteIndicator12?: string;
   noteIndicator13?: string;
   noteIndicator16?: string;
-  noteIndicator17?: string;
-  noteIndicator18?: string;
-  noteIndicator19?: string;
-  noteIndicator20?: string;
-  noteIndicator21?: string;
-  noteIndicator22?: string;
+  noteIndicator17?: string; // Catatan Lama Rencana Melaut
+  noteIndicator18?: string; // Catatan APD
+  noteIndicator19?: string; // Catatan APAR
+  noteIndicator20?: string; // Catatan Kotak Obat
+  noteIndicator21?: string; // Catatan Obat-Obatan
+  noteIndicator22?: string; // Catatan Keluhan Kesehatan
+  noteIndicator23?: string; // Catatan Buku Log Kecelakaan
+  noteIndicator24?: string; // Catatan Pemagangan & Pekerja Anak
+  noteIndicator25?: string; // Catatan Sertifikat BST-F & Dokumen Pelaut
+  noteIndicatorRecruitment?: string; // Catatan Sistem Perekrutan
 
   // Tanda Tangan & Pengesahan
   captainNik?: string;

@@ -65,15 +65,23 @@ export interface OfficialChecklistForm {
   pklStatus?: 'SEMUA_BER_PKL' | 'SEBAGIAN_BER_PKL' | 'TIDAK_ADA_PKL';
   crewWithPklCount?: number;
   pklDuration?: string; // Jangka Waktu PKL (setelah checklist no 8)
+  pklDurationMonths?: string;
   pklHeldByCrew?: boolean | null; // 9. Salinan PKL Dipegang Awak Kapal
   pklStandardFormat?: boolean | null;
   pklWageScheme?: 'BULANAN' | 'BAGI_HASIL' | 'KOMBINASI' | ''; // 10. Sistem Pengupahan Awak Kapal
   wageSystem?: 'BAGI_HASIL' | 'UPAH_BULANAN' | 'KOMBINASI';
   wageAmount?: string; // a. Besaran upah saat gaji pokok bulanan di klik
+  monthlyBasicWage?: string;
+  allowances?: Array<{ id?: string; name: string; amount: string }>; // b. Tunjangan (jenis tunjangan & nilai tunjangannya)
   profitSharingRatio?: string; // b. Besaran bagi hasil apabila isian bagi hasil murni di isi
   overtimeBonus?: string; // c. Form isian upah lembur / premi / insentif
+  overtimeOrBonusPay?: string;
   minimumWageGuaranteed?: boolean | null;
-  hasSalarySlips?: boolean; // 11. Bukti Slip Upah / Perhitungan Bagi Hasil
+  wageProofType?: 'SLIP_UPAH' | 'PERHITUNGAN_TERTULIS' | 'TIDAK_ADA' | ''; // 11. Bukti Pembayaran Upah (1. Ada bukti Slip Upah, 2. Perhitungan Tertulis, 3. Tidak ada bukti upah)
+  hasSalarySlips?: boolean; // 1. Ada bukti Slip Upah
+  hasWrittenCalculation?: boolean; // 2. Perhitungan Tertulis
+  noWageProof?: boolean; // 3. Tidak ada bukti upah
+  wagePaymentMechanism?: 'CASH' | 'TRANSFER' | 'CASH_DAN_TRANSFER' | ''; // Mekanisme Pengupahan (1. Cash, 2. Transfer, 3. Cash dan Transfer)
   hasProductionSharingProof?: boolean;
   hasWageDeductions?: boolean; // Bebas Pemotongan Upah Liar
   wageDeductionNotes?: string;
@@ -90,6 +98,8 @@ export interface OfficialChecklistForm {
   hasPrivateInsurance?: boolean;
   gearDeploymentsPerTrip?: number; // a. Jumlah pengoperasian alat tangkap per trip
   gearOperatingHoursPerDay?: number; // b. Lama pengoperasian alat tangkap perhari (satuan jam)
+  fishingOperationsPerTrip?: string | number;
+  dailyFishingOperationHours?: string | number;
 
   // IV. KONDISI OPERASIONAL & KELAYAKAN FASILITAS
   daysAtSeaPerTrip?: number; // Estimasi hari melaut per trip
@@ -99,8 +109,14 @@ export interface OfficialChecklistForm {
   dailyRestHoursCompliant?: boolean; // 16. Standar Jam Istirahat (Min. 10 Jam/Hari - ILO C188)
   restHoursPerDay?: number;
   hasCleanWaterAccess?: boolean; // Pasokan Air Bersih & Minum Memadai
+  cleanWaterCapacityLiters?: number;
+  mineralWaterGallonsCount?: number;
+  cleanWaterSourceType?: string;
   hasSufficientFoodSupply?: boolean; // Ketersediaan Bahan Makanan Layak
+  foodSupplyDays?: number;
   hasAdequateAccommodation?: boolean; // Kondisi Kamar Tidur / Sanitasi Bersih
+  bunkBedCount?: number;
+  toiletCount?: number;
 
   // V. KESELAMATAN & KESEHATAN KERJA (K3) MARITIM
   // 18. Jenis APD yang tersedia (Scored)
@@ -152,7 +168,7 @@ export interface OfficialChecklistForm {
   crewHealthComplaints?: string;
   healthComplaintNotes?: string;
 
-  // 23. Buku Log Pencatatan Kecelakaan Kerja (Scored)
+  // 23. Catatan Nahkoda (Pencatatan Kecelakaan Kerja & Insiden) (Scored)
   hasAccidentLog?: boolean;
   hasPersonalProtectiveEquipment?: boolean;
   accidentConditions?: string; // Kondisi potensi bahaya kecelakaan
@@ -176,6 +192,13 @@ export interface OfficialChecklistForm {
   internHasPpeAndInsurance?: boolean;
 
   // VII. BUKTI KOMPETENSI AWAK KAPAL PERIKANAN (AKP)
+  // 25. Bukti Sertifikat Kompetensi & Dokumen Pelaut ABK (2 Kolom: Jenis Dokumen & Jumlah ABK)
+  competencyCertificates?: Array<{
+    id?: string;
+    certificateType: string;
+    customCertificateName?: string;
+    crewCount: number;
+  }>;
   // 25. Sertifikat BST-F (Scored)
   crewWithBstCount?: number;
   // 26. Buku Pelaut (Seaman Book) Resmi (Scored)
@@ -184,6 +207,23 @@ export interface OfficialChecklistForm {
   competenciesAvailable?: string[];
 
   // VIII. SISTEM PEREKRUTAN AWAK KAPAL (Informasi - Tidak Masuk Penilaian Skor)
+  recruitmentCrews?: Array<{
+    id?: string;
+    workerName: string; // Nama Pekerja / ABK
+    workerPosition: string; // Jabatan / Posisi Pekerja
+    customPosition?: string; // Jabatan kustom jika pilih Lainnya
+    vacantJobInfo?: string; // 1. Dari mana info lowongan kerja diketahui
+    recruiterType?: 'PERUSAHAAN' | 'NAHKODA' | 'PEMILIK_KAPAL' | 'MANDIRI' | 'AGEN' | 'CALO_PERORANGAN' | string; // 2. Direkrut oleh siapa
+    agentLicenseStatus?: 'BERIZIN' | 'TIDAK_BERIZIN' | 'TIDAK_TAHU' | ''; // 3. Legalitas izin agen
+    recruiterName?: string; // 4a. Nama perekrut / PT Agen
+    recruiterPhone?: string; // 4b. No telepon kontak perekrut
+    recruiterAddress?: string; // 4c. Alamat kantor agen
+    isHoused?: boolean | null; // 5a. Apakah ditampung sebelum berangkat?
+    housingLocation?: string; // 5b. Lokasi tempat penampungan
+    housingCondition?: 'LAYAK' | 'KURANG_LAYAK' | 'TIDAK_LAYAK' | string; // 5c. Kondisi tempat penampungan
+    feeOrDeduction?: string; // 6. Biaya perekrutan / skema potongan uang muka
+    notes?: string; // 7. Catatan khusus perekrutan pekerja ini
+  }>;
   recruitmentVacantJobInfo?: string; // a. Informasi lowongan kerja (sumber info, perantara, dsb)
   recruitmentRecruiterType?: 'PERUSAHAAN' | 'NAHKODA' | 'PEMILIK_KAPAL' | 'MANDIRI' | 'AGEN' | ''; // b. Pilihan pihak perekrut
   recruitmentAgentLicenseStatus?: 'BERIZIN' | 'TIDAK_BERIZIN' | ''; // Pilihan agen berizin / agen tidak berizin
@@ -203,23 +243,31 @@ export interface OfficialChecklistForm {
   freedomFromForcedLaborConfirmed?: boolean;
   identityHoldFlag?: boolean; // Terindikasi Penahanan Dokumen Asli ABK (Red Flag Kritis)
   arbitraryDeductionFlag?: boolean; // Terindikasi Pemotongan Upah Liar / Jeratan Utang (Red Flag Kritis)
-  additionalNotes?: string;
+  additionalNotes?: string; // Catatan Tambahan Pengawas
+  officialRecommendations?: string; // Rekomendasi Resmi Pengawas
 
-  // Catatan Khusus Pemeriksa per Indikator
+  // Catatan Khusus Pemeriksa per Indikator & Bagian
+  noteSection1?: string;
+  noteIndicatorWlkp?: string;
   noteIndicator8?: string;
   noteIndicator9?: string;
   noteIndicator10?: string;
   noteIndicator11?: string;
   noteIndicator12?: string;
   noteIndicator13?: string;
+  noteIndicator14?: string;
+  noteIndicator15?: string;
   noteIndicator16?: string;
+  noteIndicator16b?: string;
+  noteIndicator16c?: string;
+  noteIndicator16d?: string;
   noteIndicator17?: string; // Catatan Lama Rencana Melaut
   noteIndicator18?: string; // Catatan APD
   noteIndicator19?: string; // Catatan APAR
   noteIndicator20?: string; // Catatan Kotak Obat
   noteIndicator21?: string; // Catatan Obat-Obatan
   noteIndicator22?: string; // Catatan Keluhan Kesehatan
-  noteIndicator23?: string; // Catatan Buku Log Kecelakaan
+  noteIndicator23?: string; // Catatan Indikator 23 (Catatan Nahkoda / Insiden)
   noteIndicator24?: string; // Catatan Pemagangan & Pekerja Anak
   noteIndicator25?: string; // Catatan Sertifikat BST-F & Dokumen Pelaut
   noteIndicatorRecruitment?: string; // Catatan Sistem Perekrutan

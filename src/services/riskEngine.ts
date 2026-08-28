@@ -232,7 +232,7 @@ export function calculateVesselRisk(
  * 13. 19. Alat Pemadam Api Ringan (APAR)
  * 14. 20. Kotak Obat (P3K Fisik)
  * 15. 21. Obat-Obatan P3K Maritim
- * 16. 23. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden
+ * 16. 23. Catatan Nahkoda (Pencatatan Kecelakaan Kerja & Insiden)
  * 17. 24. Fasilitasi Siswa Magang & Bebas Pekerja Anak
  * 18. Indikator Khusus: Terindikasi Penahanan Dokumen Asli Awak Kapal (Bebas & Terverifikasi)
  * 19. Indikator Khusus: Terindikasi Pemotongan Upah Liar / Jeratan Utang (Bebas & Terverifikasi)
@@ -321,10 +321,18 @@ export function calculateRiskFromOfficialChecklist(form: any): {
   // -------------------------------------------------------------
   // 5. Jaminan Upah Minimum & Slip Upah Resmi (Indikator 11)
   // -------------------------------------------------------------
-  if ((form.hasSalarySlips === true || form.hasProductionSharingProof === true) && form.hasWageDeductions !== true) {
+  const hasValidWageProof = (
+    form.wageProofType === 'SLIP_UPAH' ||
+    form.wageProofType === 'PERHITUNGAN_TERTULIS' ||
+    form.hasSalarySlips === true ||
+    form.hasWrittenCalculation === true ||
+    form.hasProductionSharingProof === true
+  ) && form.wageProofType !== 'TIDAK_ADA' && form.noWageProof !== true;
+
+  if (hasValidWageProof && form.hasWageDeductions !== true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 5: Belum ada slip upah resmi atau terindikasi potongan tidak wajar.');
+    primaryRiskFactors.push('Indikator 5: Belum ada bukti slip upah resmi/perhitungan tertulis.');
     if (form.hasWageDeductions === true) {
       violations.push({
         categoryId: 'VIO-WAGE-01',
@@ -439,12 +447,12 @@ export function calculateRiskFromOfficialChecklist(form: any): {
   }
 
   // -------------------------------------------------------------
-  // 16. 23. Buku Log Pencatatan Kecelakaan Kerja & Rekam Insiden
+  // 16. 23. Catatan Nahkoda (Pencatatan Kecelakaan Kerja & Insiden)
   // -------------------------------------------------------------
   if (form.hasAccidentLog === true) {
     completedItemsCount++;
   } else {
-    primaryRiskFactors.push('Indikator 16 (23. Log Insiden): Buku log pencatatan kecelakaan kerja belum disediakan.');
+    primaryRiskFactors.push('Indikator 16 (23. Catatan Nahkoda): Catatan nahkoda terkait pencatatan kecelakaan kerja & insiden belum disediakan.');
   }
 
   // -------------------------------------------------------------

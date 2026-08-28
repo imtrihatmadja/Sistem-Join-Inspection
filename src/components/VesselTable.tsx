@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Vessel, RiskLevel } from '../types';
 import { RiskBadge } from './RiskBadge';
-import { Search, ArrowUpDown, ChevronRight, Ship, ClipboardCheck, Trash2, Loader2, MapPin } from 'lucide-react';
+import { Search, ArrowUpDown, ChevronRight, Ship, ClipboardCheck, Trash2, Loader2, MapPin, Pencil } from 'lucide-react';
 import { deleteVessel } from '../services/vesselService';
 import { normalizePortName } from '../constants/ports';
 
@@ -10,6 +10,7 @@ interface VesselTableProps {
   onSelectVessel: (vessel: Vessel) => void;
   onInspectVessel: (vessel: Vessel) => void;
   onOpenChecklist?: (vessel?: Vessel) => void;
+  onEditVessel?: (vessel: Vessel) => void;
   onDeleteVessel?: (vessel: Vessel) => void;
   selectedPort: string;
 }
@@ -19,6 +20,7 @@ export const VesselTable: React.FC<VesselTableProps> = ({
   onSelectVessel,
   onInspectVessel,
   onOpenChecklist,
+  onEditVessel,
   onDeleteVessel,
   selectedPort
 }) => {
@@ -200,12 +202,22 @@ export const VesselTable: React.FC<VesselTableProps> = ({
                 </span>
 
                 <div className="flex items-center gap-1.5">
+                  {onEditVessel && (
+                    <button
+                      onClick={() => onEditVessel(vessel)}
+                      title="Edit Data Kapal"
+                      className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95 transition-transform"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       if (onOpenChecklist) onOpenChecklist(vessel);
                       else onInspectVessel(vessel);
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition-transform"
+                    className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition-transform"
                   >
                     <ClipboardCheck className="w-3.5 h-3.5" />
                     <span>Checklist</span>
@@ -339,6 +351,18 @@ export const VesselTable: React.FC<VesselTableProps> = ({
                   {/* Actions */}
                   <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
+                      {onEditVessel && (
+                        <button
+                          id={`btn-table-edit-${vessel.id}`}
+                          onClick={() => onEditVessel(vessel)}
+                          title="Edit / Perbaharui Data Kapal"
+                          className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Edit</span>
+                        </button>
+                      )}
+
                       <button
                         id={`btn-table-checklist-${vessel.id}`}
                         onClick={() => {
@@ -349,9 +373,9 @@ export const VesselTable: React.FC<VesselTableProps> = ({
                           }
                         }}
                         title="Isi Formulir Checklist Resmi"
-                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <ClipboardCheck className="w-3.5 h-3.5 text-blue-600" />
+                        <ClipboardCheck className="w-3.5 h-3.5 text-teal-600" />
                         <span>Checklist</span>
                       </button>
 

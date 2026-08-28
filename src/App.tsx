@@ -45,6 +45,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [selectedVesselForDetail, setSelectedVesselForDetail] = useState<Vessel | null>(null);
   const [preselectedVesselForInspect, setPreselectedVesselForInspect] = useState<Vessel | null>(null);
+  const [vesselToEdit, setVesselToEdit] = useState<Vessel | null>(null);
 
   // Initial Auth & Firestore Subscriptions
   useEffect(() => {
@@ -72,6 +73,16 @@ export default function App() {
 
   const stats: InspectionStats = computeInspectionStats(vessels, inspections);
 
+  const handleOpenNewVessel = () => {
+    setVesselToEdit(null);
+    setIsAddVesselModalOpen(true);
+  };
+
+  const handleOpenEditVessel = (vessel: Vessel) => {
+    setVesselToEdit(vessel);
+    setIsAddVesselModalOpen(true);
+  };
+
   const handleOpenOfficialChecklist = (targetVessel?: Vessel) => {
     setPreselectedVesselForInspect(targetVessel || null);
     setIsOfficialChecklistOpen(true);
@@ -85,6 +96,10 @@ export default function App() {
   const handleSelectVesselForDetail = (vessel: Vessel) => {
     setSelectedVesselForDetail(vessel);
   };
+
+  const currentDetailVessel = selectedVesselForDetail
+    ? (vessels.find(v => v.id === selectedVesselForDetail.id) || selectedVesselForDetail)
+    : null;
 
   const handleFilterPortFromMatrix = (port: string) => {
     setSelectedPort(port);
@@ -110,7 +125,7 @@ export default function App() {
         ports={INDONESIAN_PORTS}
         onOpenNewInspection={() => handleOpenOfficialChecklist()}
         onOpenChecklist={() => handleOpenOfficialChecklist()}
-        onOpenNewVessel={() => setIsAddVesselModalOpen(true)}
+        onOpenNewVessel={handleOpenNewVessel}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
@@ -124,7 +139,7 @@ export default function App() {
           onOpenMobileMenu={() => setIsMobileOpen(true)}
           onOpenNewInspection={() => handleOpenOfficialChecklist()}
           onOpenChecklist={() => handleOpenOfficialChecklist()}
-          onOpenNewVessel={() => setIsAddVesselModalOpen(true)}
+          onOpenNewVessel={handleOpenNewVessel}
         />
 
         {/* Scrollable Viewport with safe mobile bottom padding */}
@@ -155,7 +170,7 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setIsAddVesselModalOpen(true)}
+                    onClick={handleOpenNewVessel}
                     className="flex-1 sm:flex-none px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer min-h-[40px] text-center"
                   >
                     + Kapal Baru
@@ -174,6 +189,7 @@ export default function App() {
                 onSelectVessel={handleSelectVesselForDetail}
                 onInspectVessel={handleOpenOfficialChecklist}
                 onOpenChecklist={handleOpenOfficialChecklist}
+                onEditVessel={handleOpenEditVessel}
                 selectedPort={selectedPort}
               />
             </div>
@@ -256,19 +272,28 @@ export default function App() {
       <VesselDetailModal
         isOpen={!!selectedVesselForDetail}
         onClose={() => setSelectedVesselForDetail(null)}
-        vessel={selectedVesselForDetail}
+        vessel={currentDetailVessel}
         inspections={inspections}
         onOpenNewInspection={handleOpenOfficialChecklist}
         onUpdateFollowUp={updateFollowUp}
+        onEditVessel={handleOpenEditVessel}
         currentUserEmail={currentUser?.email}
       />
 
-
-      {/* 4. Modal Daftarkan Kapal Baru */}
+      {/* 4. Modal Daftarkan Kapal Baru & Edit Kapal */}
       <AddVesselModal
         isOpen={isAddVesselModalOpen}
-        onClose={() => setIsAddVesselModalOpen(false)}
-        onSaveVessel={saveNewVessel}
+        onClose={() => {
+          setIsAddVesselModalOpen(false);
+          setVesselToEdit(null);
+        }}
+        onSaveVessel={async (vessel) => {
+          await saveNewVessel(vessel);
+          if (selectedVesselForDetail?.id === vessel.id) {
+            setSelectedVesselForDetail(vessel);
+          }
+        }}
+        vesselToEdit={vesselToEdit}
       />
 
       {/* 5. Modal Autentikasi Pengawas */}

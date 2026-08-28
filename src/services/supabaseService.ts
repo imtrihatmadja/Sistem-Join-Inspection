@@ -131,6 +131,35 @@ export async function testSupabaseConnection(
 }
 
 /**
+ * Helper to sanitize JavaScript objects for PostgreSQL JSONB columns
+ */
+function sanitizeForJsonb(obj: any): any {
+  if (obj === undefined || obj === null) return null;
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch (e) {
+    console.warn('Error sanitizing for JSONB:', e);
+    return null;
+  }
+}
+
+/**
+ * Helper to safely parse JSONB / JSON string values
+ */
+function safeParseJsonb(val: any): any {
+  if (!val) return undefined;
+  let current = val;
+  while (typeof current === 'string') {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+/**
  * Sync Local Vessels to Supabase Database
  */
 export async function syncVesselsToSupabase(vessels: Vessel[]): Promise<{ count: number; error?: string }> {
@@ -158,7 +187,7 @@ export async function syncVesselsToSupabase(vessels: Vessel[]): Promise<{ count:
       active_violations_count: Number(v.activeViolationsCount) || 0,
       critical_violations_count: Number(v.criticalViolationsCount) || 0,
       last_recommendation: v.lastRecommendation || null,
-      latest_checklist: v.latestChecklist ? JSON.stringify(v.latestChecklist) : null,
+      latest_checklist: sanitizeForJsonb(v.latestChecklist),
       updated_at: new Date().toISOString()
     }));
 
@@ -202,7 +231,7 @@ export async function saveSingleVesselToSupabase(v: Vessel): Promise<{ success: 
       active_violations_count: Number(v.activeViolationsCount) || 0,
       critical_violations_count: Number(v.criticalViolationsCount) || 0,
       last_recommendation: v.lastRecommendation || null,
-      latest_checklist: v.latestChecklist ? JSON.stringify(v.latestChecklist) : null,
+      latest_checklist: sanitizeForJsonb(v.latestChecklist),
       updated_at: new Date().toISOString()
     };
 
@@ -232,17 +261,17 @@ export async function syncInspectionsToSupabase(inspections: InspectionRecord[])
       vessel_name: i.vesselName,
       registration_number: i.registrationNumber,
       home_port: i.homePort,
-      inspection_date: i.inspectionDate,
+      inspection_date: i.inspectionDate ? i.inspectionDate.split('T')[0] : new Date().toISOString().split('T')[0],
       inspection_port: i.inspectionPort,
       lead_agency: i.leadAgency,
       inspectors: i.inspectors,
-      crew_data: JSON.stringify(i.crewData),
-      checklist_data: i.checklistData ? JSON.stringify(i.checklistData) : null,
-      violations: JSON.stringify(i.violations),
-      risk_evaluation: JSON.stringify(i.riskEvaluation),
+      crew_data: sanitizeForJsonb(i.crewData),
+      checklist_data: sanitizeForJsonb(i.checklistData),
+      violations: sanitizeForJsonb(i.violations || []),
+      risk_evaluation: sanitizeForJsonb(i.riskEvaluation),
       follow_up_status: i.followUpStatus,
       official_notes: i.officialNotes,
-      action_deadline: i.actionDeadline || null,
+      action_deadline: i.actionDeadline ? i.actionDeadline.split('T')[0] : null,
       created_by: i.createdBy,
       created_at: i.createdAt || new Date().toISOString()
     }));
@@ -277,10 +306,10 @@ export async function saveSingleInspectionToSupabase(i: InspectionRecord): Promi
       inspection_port: i.inspectionPort,
       lead_agency: i.leadAgency,
       inspectors: i.inspectors,
-      crew_data: JSON.stringify(i.crewData),
-      checklist_data: i.checklistData ? JSON.stringify(i.checklistData) : null,
-      violations: JSON.stringify(i.violations || []),
-      risk_evaluation: JSON.stringify(i.riskEvaluation),
+      crew_data: sanitizeForJsonb(i.crewData),
+      checklist_data: sanitizeForJsonb(i.checklistData),
+      violations: sanitizeForJsonb(i.violations || []),
+      risk_evaluation: sanitizeForJsonb(i.riskEvaluation),
       follow_up_status: i.followUpStatus,
       official_notes: i.officialNotes,
       action_deadline: i.actionDeadline ? i.actionDeadline.split('T')[0] : null,
@@ -390,16 +419,7 @@ export async function fetchVesselsFromSupabase(): Promise<{ data: Vessel[]; erro
     if (!data) return { data: [] };
 
     const vessels: Vessel[] = data.map((row: any) => {
-      let parsedChecklist = undefined;
-      if (row.latest_checklist) {
-        try {
-          parsedChecklist = typeof row.latest_checklist === 'string' 
-            ? JSON.parse(row.latest_checklist) 
-            : row.latest_checklist;
-        } catch (e) {
-          console.warn('Error parsing latest_checklist from Supabase:', e);
-        }
-      }
+      const parsedChecklist = safeParseJsonb(row.latest_checklist);
 
       return {
         id: row.id,
@@ -451,10 +471,10 @@ export async function fetchInspectionsFromSupabase(): Promise<{ data: Inspection
     if (!data) return { data: [] };
 
     const inspections: InspectionRecord[] = data.map((row: any) => {
-      let crewData = { totalCrew: 0, maleCount: 0, femaleCount: 0, pklHoldersCount: 0, bpjsTkCount: 0, bpjsHealthCount: 0 };
-      let checklistData = undefined;
-      let violations = [];
-      let riskEvaluation = {
+      const crewData = safeParseJsonb(row.crew_data) || { totalCrew: 0, maleCount: 0, femaleCount: 0, pklHoldersCount: 0, bpjsTkCount: 0, bpjsHealthCount: 0 };
+      const checklistData = safeParseJsonb(row.checklist_data);
+      const violations = safeParseJsonb(row.violations) || [];
+      const riskEvaluation = safeParseJsonb(row.risk_evaluation) || {
         score: 0,
         complianceRate: 0,
         riskLevel: 'LOW',
@@ -462,38 +482,6 @@ export async function fetchInspectionsFromSupabase(): Promise<{ data: Inspection
         recommendation: '',
         primaryRiskFactors: []
       };
-
-      try {
-        if (row.crew_data) {
-          crewData = typeof row.crew_data === 'string' ? JSON.parse(row.crew_data) : row.crew_data;
-        }
-      } catch (e) {
-        console.warn('Error parsing crew_data from Supabase:', e);
-      }
-
-      try {
-        if (row.checklist_data) {
-          checklistData = typeof row.checklist_data === 'string' ? JSON.parse(row.checklist_data) : row.checklist_data;
-        }
-      } catch (e) {
-        console.warn('Error parsing checklist_data from Supabase:', e);
-      }
-
-      try {
-        if (row.violations) {
-          violations = typeof row.violations === 'string' ? JSON.parse(row.violations) : row.violations;
-        }
-      } catch (e) {
-        console.warn('Error parsing violations from Supabase:', e);
-      }
-
-      try {
-        if (row.risk_evaluation) {
-          riskEvaluation = typeof row.risk_evaluation === 'string' ? JSON.parse(row.risk_evaluation) : row.risk_evaluation;
-        }
-      } catch (e) {
-        console.warn('Error parsing risk_evaluation from Supabase:', e);
-      }
 
       return {
         id: row.id,

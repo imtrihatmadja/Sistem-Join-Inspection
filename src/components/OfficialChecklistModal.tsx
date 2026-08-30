@@ -7,6 +7,13 @@ import {
   InspectionViolation
 } from '../types';
 import { calculateRiskFromOfficialChecklist } from '../services/riskEngine';
+import {
+  saveInspectionDraft,
+  getInspectionDraft,
+  deleteInspectionDraft,
+  subscribeToInspectionDrafts,
+  DRAFT_KEY_PREFIX
+} from '../services/vesselService';
 import { INDONESIAN_PORTS, PORT_GROUPS, normalizePortName } from '../constants/ports';
 import { STANDARD_GEAR_TYPES } from '../constants/gearTypes';
 import { RiskBadge } from './RiskBadge';
@@ -43,8 +50,6 @@ import {
   Lock,
   RotateCcw
 } from 'lucide-react';
-
-const DRAFT_KEY_PREFIX = 'sistem_inspeksi_draft_';
 
 export const getInitialBlankForm = (v?: Vessel | null): OfficialChecklistForm => ({
   vesselName: v?.name || '',
@@ -273,6 +278,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
   const [selectedVesselId, setSelectedVesselId] = useState<string>('');
   const [activeSection, setActiveSection] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [draftStatus, setDraftStatus] = useState<{ hasDraft: boolean; savedAt: string | null }>({
     hasDraft: false,
     savedAt: null
@@ -404,19 +410,38 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
 
   const hasInitializedRef = useRef<string | null>(null);
 
-  const loadDraftForVessel = (vesselId: string): { form: OfficialChecklistForm; savedAt: string } | null => {
-    if (!vesselId) return null;
+  // Load draft synchronously from local storage and asynchronously from Cloud Firestore
+  const syncDraftForVessel = async (vesselId: string, fallbackVesselObj?: Vessel | null) => {
+    if (!vesselId) return;
+
+    // 1. Initial immediate local check
     try {
       const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${vesselId}`);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.form) {
-        return { form: parsed.form, savedAt: parsed.savedAt || new Date().toISOString() };
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.form) {
+          setForm(parsed.form);
+          setDraftStatus({ hasDraft: true, savedAt: parsed.savedAt || new Date().toISOString() });
+        }
+      } else {
+        setForm(getInitialBlankForm(fallbackVesselObj));
+        setDraftStatus({ hasDraft: false, savedAt: null });
+      }
+    } catch {
+      setForm(getInitialBlankForm(fallbackVesselObj));
+      setDraftStatus({ hasDraft: false, savedAt: null });
+    }
+
+    // 2. Authoritative Cloud Firestore check for multi-device sync
+    try {
+      const cloudDraft = await getInspectionDraft(vesselId);
+      if (cloudDraft && cloudDraft.form) {
+        setForm(cloudDraft.form);
+        setDraftStatus({ hasDraft: true, savedAt: cloudDraft.savedAt });
       }
     } catch (err) {
-      console.error('Error reading draft from localStorage:', err);
+      console.warn('Cloud draft sync fetch note:', err);
     }
-    return null;
   };
 
   // Prepopulate vessel data when initialVessel changes or modal opens
@@ -433,17 +458,35 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       setSelectedVesselId(currentTargetId);
 
       const vesselObj = vessels.find((v) => v.id === currentTargetId) || initialVessel;
-      const draft = loadDraftForVessel(currentTargetId);
-
-      if (draft) {
-        setForm(draft.form);
-        setDraftStatus({ hasDraft: true, savedAt: draft.savedAt });
-      } else {
-        setForm(getInitialBlankForm(vesselObj));
-        setDraftStatus({ hasDraft: false, savedAt: null });
-      }
+      syncDraftForVessel(currentTargetId, vesselObj);
     }
   }, [initialVessel, vessels, isOpen, selectedVesselId]);
+
+  // Real-time listener for cross-device draft updates
+  useEffect(() => {
+    if (!isOpen || !selectedVesselId) return;
+
+    const unsub = subscribeToInspectionDrafts((draftsMap) => {
+      const liveDraft = draftsMap[selectedVesselId];
+      if (liveDraft && liveDraft.form) {
+        // If received a live draft update from another device/tab
+        setDraftStatus((prev) => {
+          if (!prev.hasDraft || prev.savedAt !== liveDraft.savedAt) {
+            setForm(liveDraft.form);
+            return { hasDraft: true, savedAt: liveDraft.savedAt };
+          }
+          return prev;
+        });
+      } else if (!liveDraft && draftStatus.hasDraft) {
+        // Draft was deleted/cleared elsewhere
+        const currentV = vessels.find((v) => v.id === selectedVesselId);
+        setForm(getInitialBlankForm(currentV));
+        setDraftStatus({ hasDraft: false, savedAt: null });
+      }
+    });
+
+    return () => unsub();
+  }, [isOpen, selectedVesselId]);
 
   if (!isOpen) return null;
 
@@ -451,50 +494,41 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     setSelectedVesselId(vesselId);
     hasInitializedRef.current = vesselId;
     const v = vessels.find((item) => item.id === vesselId);
-    const draft = loadDraftForVessel(vesselId);
-    if (draft) {
-      setForm(draft.form);
-      setDraftStatus({ hasDraft: true, savedAt: draft.savedAt });
-    } else {
-      setForm(getInitialBlankForm(v));
-      setDraftStatus({ hasDraft: false, savedAt: null });
-    }
+    syncDraftForVessel(vesselId, v);
   };
 
   // Live Risk Calculation derived from current checklist state (14 indicators scored)
   const { violations, riskEvaluation, complianceRate, completedItemsCount, totalItemsCount } = calculateRiskFromOfficialChecklist(form);
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!selectedVesselId) {
       alert('Pilih atau daftarkan kapal terlebih dahulu untuk menyimpan draft.');
       return;
     }
-    const now = new Date().toISOString();
-    const draftData = {
-      form,
-      savedAt: now,
-      vesselId: selectedVesselId,
-      vesselName: form.vesselName
-    };
+    setIsSavingDraft(true);
     try {
-      localStorage.setItem(`${DRAFT_KEY_PREFIX}${selectedVesselId}`, JSON.stringify(draftData));
-      setDraftStatus({ hasDraft: true, savedAt: now });
-      setNotificationMessage('Draft isian berhasil disimpan! Saat formulir ini ditutup dan dibuka kembali, seluruh data draft akan otomatis dimunculkan ulang.');
-      setTimeout(() => setNotificationMessage(null), 5000);
+      const saved = await saveInspectionDraft(selectedVesselId, form, currentUserEmail);
+      setDraftStatus({ hasDraft: true, savedAt: saved.savedAt });
+      setNotificationMessage('Draft isian berhasil disimpan ke Cloud & Gawai! Anda dapat melanjutkan pengisian dari perangkat apa pun kapan saja.');
+      setTimeout(() => setNotificationMessage(null), 6000);
     } catch (err) {
       console.error('Gagal menyimpan draft:', err);
+      setNotificationMessage('Draft tersimpan di gawai lokal.');
+      setTimeout(() => setNotificationMessage(null), 4000);
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
-  const handleDiscardDraft = () => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus draft tersimpan untuk kapal ini dan mengosongkan formulir?')) {
+  const handleDiscardDraft = async () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus draft tersimpan untuk kapal ini dan mengosongkan formulir? Data draft di seluruh gawai akan dibersihkan.')) {
       if (selectedVesselId) {
-        localStorage.removeItem(`${DRAFT_KEY_PREFIX}${selectedVesselId}`);
+        await deleteInspectionDraft(selectedVesselId);
       }
       const currentV = vessels.find((v) => v.id === selectedVesselId);
       setForm(getInitialBlankForm(currentV));
       setDraftStatus({ hasDraft: false, savedAt: null });
-      setNotificationMessage('Draft telah dihapus. Formulir dikosongkan ke status awal.');
+      setNotificationMessage('Draft telah dihapus dari seluruh gawai. Formulir dikosongkan.');
       setTimeout(() => setNotificationMessage(null), 3000);
     }
   };
@@ -600,9 +634,9 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
       // Kunci data inspeksi resmi ke database Supabase & state
       await onSaveInspection(record, selectedVessel);
 
-      // KUNCI & HAPUS DRAFT: saat disubmit dan disetujui, draft kapal ini langsung dihapus
+      // KUNCI & HAPUS DRAFT: saat disubmit dan disetujui, draft kapal ini langsung dihapus dari lokal & cloud
       if (selectedVesselId) {
-        localStorage.removeItem(`${DRAFT_KEY_PREFIX}${selectedVesselId}`);
+        await deleteInspectionDraft(selectedVesselId);
       }
 
       // KOSONGKAN FORM: Saat form dibuka kembali nanti, form akan bersih/kosong
@@ -3476,23 +3510,24 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
             )}
 
             {/* Bottom Actions Bar with Thumb-Friendly Controls */}
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-2 mt-auto">
-              <div className="flex items-center gap-1.5">
+            {/* Action Bar Footer (Responsive for Mobile, Tablet & Desktop) */}
+            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mt-auto">
+              <div className="flex items-center justify-between sm:justify-start gap-2">
                 {activeSection > 1 && (
                   <button
                     type="button"
                     onClick={() => setActiveSection(activeSection - 1)}
-                    className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors flex items-center gap-1 cursor-pointer min-h-[40px]"
+                    className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Sebelumnya</span>
+                    <span>Sebelumnya</span>
                   </button>
                 )}
                 {activeSection < 9 && (
                   <button
                     type="button"
                     onClick={() => setActiveSection(activeSection + 1)}
-                    className="px-3.5 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-1 cursor-pointer min-h-[40px]"
+                    className="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation ml-auto sm:ml-0"
                   >
                     <span>Lanjut</span>
                     <ChevronRight className="w-4 h-4" />
@@ -3500,30 +3535,35 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
+              <div className="flex items-center gap-2 justify-end flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer min-h-[40px]"
+                  className="flex-1 sm:flex-none px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100 active:scale-95 transition-all cursor-pointer min-h-[44px] text-center touch-manipulation"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveDraft}
-                  className="px-3.5 sm:px-4 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer min-h-[40px] shadow-2xs"
-                  title="Simpan sementara progres checklist sebagai draft agar data tidak hilang"
+                  disabled={isSavingDraft}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 active:scale-95 border border-amber-300 text-amber-900 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] shadow-2xs touch-manipulation disabled:opacity-50"
+                  title="Simpan sementara progres checklist sebagai draft agar tersinkron di seluruh gawai"
                 >
-                  <Bookmark className="w-4 h-4 text-amber-700" />
-                  <span>Simpan Draft</span>
+                  {isSavingDraft ? (
+                    <span className="inline-block w-4 h-4 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Bookmark className="w-4 h-4 text-amber-700 shrink-0" />
+                  )}
+                  <span>{isSavingDraft ? 'Menyimpan...' : 'Simpan Draft'}</span>
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 sm:px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer min-h-[40px]"
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
                   title="Kunci hasil pengawasan resmi ke database, perbarui skor risiko kapal, dan bersihkan draft"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-blue-100" />
+                  <CheckCircle2 className="w-4 h-4 text-blue-100 shrink-0" />
                   <span>{isSubmitting ? 'Memproses...' : 'Submit & Skor (Approve)'}</span>
                 </button>
               </div>

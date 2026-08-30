@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -9,7 +10,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase/config';
-import { InspectionRecord, Vessel, InspectionStats } from '../types';
+import { InspectionRecord, Vessel, InspectionStats, InspectionDraft, OfficialChecklistForm } from '../types';
 import {
   saveSingleVesselToSupabase,
   saveSingleInspectionToSupabase,
@@ -22,10 +23,12 @@ import {
 
 const VESSELS_COLLECTION = 'vessels';
 const INSPECTIONS_COLLECTION = 'inspections';
+const DRAFTS_COLLECTION = 'inspection_drafts';
 
 // Local storage backup key for seamless offline continuity
 const LOCAL_VESSELS_KEY = 'dfw_monev_vessels_v1';
 const LOCAL_INSPECTIONS_KEY = 'dfw_monev_inspections_v1';
+export const DRAFT_KEY_PREFIX = 'sistem_inspeksi_draft_';
 
 // In-memory active subscribers for instant zero-latency UI re-renders
 const vesselSubscribers = new Set<(vessels: Vessel[]) => void>();
@@ -450,6 +453,13 @@ export async function saveNewInspection(
   } catch (err) {
     console.warn('Firestore sync skipped:', err);
   }
+
+  // 5. Clean up any saved draft for this vessel across local storage and cloud database
+  try {
+    await deleteInspectionDraft(inspection.vesselId);
+  } catch (err) {
+    console.warn('Draft cleanup notice:', err);
+  }
 }
 
 /**
@@ -615,4 +625,141 @@ export function computeInspectionStats(vessels: Vessel[], inspections: Inspectio
     pendingFollowUps,
     activePortsCount: Math.max(portsSet.size, 0)
   };
+}
+
+/**
+ * Save Inspection Draft:
+ * Saves immediately to local storage and syncs to Cloud Firestore so that
+ * any user/device accessing the vessel checklist will see the exact same draft.
+ */
+export async function saveInspectionDraft(
+  vesselId: string,
+  form: OfficialChecklistForm,
+  userEmail?: string
+): Promise<InspectionDraft> {
+  const now = new Date().toISOString();
+  const draftData: InspectionDraft = {
+    vesselId,
+    vesselName: form.vesselName || '',
+    form,
+    savedAt: now,
+    updatedBy: userEmail || 'Pengawas Lapangan'
+  };
+
+  // 1. Simpan ke Local Storage untuk akses cepat dan offline fallback
+  try {
+    localStorage.setItem(`${DRAFT_KEY_PREFIX}${vesselId}`, JSON.stringify(draftData));
+  } catch (err) {
+    console.warn('LocalStorage save draft note:', err);
+  }
+
+  // 2. Sinkronisasi ke Cloud Firestore agar dapat dimunculkan kembali di gawai/device manapun
+  try {
+    const sanitizedDraft = sanitizeForFirestore(draftData);
+    const draftDocRef = doc(db, DRAFTS_COLLECTION, vesselId);
+    await withTimeout(setDoc(draftDocRef, sanitizedDraft), 5000);
+  } catch (err) {
+    console.warn('Cloud Firestore save draft note:', err);
+  }
+
+  return draftData;
+}
+
+/**
+ * Get Inspection Draft:
+ * Membaca draft tersimpan dari LocalStorage dan Cloud Firestore secara otomatis,
+ * memilih data yang paling mutakhir (terbaru) untuk sinkronisasi lintas perangkat.
+ */
+export async function getInspectionDraft(vesselId: string): Promise<InspectionDraft | null> {
+  if (!vesselId) return null;
+
+  let localDraft: InspectionDraft | null = null;
+  try {
+    const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${vesselId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.form) {
+        localDraft = parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading local draft:', err);
+  }
+
+  // Ambil data draft dari Cloud Firestore
+  try {
+    const draftDocRef = doc(db, DRAFTS_COLLECTION, vesselId);
+    const snap = await withTimeout(getDoc(draftDocRef), 3500);
+    if (snap.exists()) {
+      const cloudDraft = snap.data() as InspectionDraft;
+      if (cloudDraft && cloudDraft.form) {
+        // Jika ada di cloud, perbarui local storage agar selaras
+        try {
+          localStorage.setItem(`${DRAFT_KEY_PREFIX}${vesselId}`, JSON.stringify(cloudDraft));
+        } catch {
+          // ignore local quota
+        }
+        return cloudDraft;
+      }
+    }
+  } catch (err) {
+    console.warn('Cloud draft fetch notice:', err);
+  }
+
+  return localDraft;
+}
+
+/**
+ * Delete Inspection Draft:
+ * Menghapus draft dari LocalStorage dan Cloud Firestore secara menyeluruh
+ * saat user menekan 'Hapus Draft / Reset' atau setelah berhasil submit resmi.
+ */
+export async function deleteInspectionDraft(vesselId: string): Promise<void> {
+  if (!vesselId) return;
+
+  // 1. Hapus dari Local Storage
+  try {
+    localStorage.removeItem(`${DRAFT_KEY_PREFIX}${vesselId}`);
+  } catch (err) {
+    console.warn('LocalStorage delete draft note:', err);
+  }
+
+  // 2. Hapus dari Cloud Firestore
+  try {
+    const draftDocRef = doc(db, DRAFTS_COLLECTION, vesselId);
+    await withTimeout(deleteDoc(draftDocRef), 3500);
+  } catch (err) {
+    console.warn('Cloud draft deletion notice:', err);
+  }
+}
+
+/**
+ * Real-time Listener untuk Seluruh Draft Aktif:
+ * Memastikan sinkronisasi real-time antar tab dan multi-device.
+ */
+export function subscribeToInspectionDrafts(
+  onUpdate: (drafts: Record<string, InspectionDraft>) => void
+) {
+  try {
+    const draftsCol = collection(db, DRAFTS_COLLECTION);
+    return onSnapshot(
+      draftsCol,
+      (snapshot) => {
+        const draftsMap: Record<string, InspectionDraft> = {};
+        snapshot.forEach((dSnap) => {
+          const data = dSnap.data() as InspectionDraft;
+          if (data && data.form) {
+            draftsMap[dSnap.id] = data;
+          }
+        });
+        onUpdate(draftsMap);
+      },
+      (error) => {
+        console.warn('Firestore drafts listener notice:', error);
+      }
+    );
+  } catch (err) {
+    console.warn('Could not initialize drafts listener:', err);
+    return () => {};
+  }
 }

@@ -18,6 +18,10 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    match /inspection_drafts/{vesselId} {
+      allow read, write: if true;
+    }
+
     match /{document=**} {
       allow read, write: if true;
     }

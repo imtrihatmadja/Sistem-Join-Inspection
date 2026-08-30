@@ -330,6 +330,14 @@ export interface InspectionRecord {
   createdAt: string;
 }
 
+export interface InspectionDraft {
+  vesselId: string;
+  vesselName: string;
+  form: OfficialChecklistForm;
+  savedAt: string;
+  updatedBy?: string;
+}
+
 export interface Vessel {
   id: string;
   name: string;

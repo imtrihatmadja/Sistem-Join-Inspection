@@ -49,6 +49,19 @@
         "createdAt": { "type": "string" }
       },
       "required": ["vesselId", "inspectionDate", "port"]
+    },
+    "InspectionDraft": {
+      "title": "InspectionDraft",
+      "description": "Draft isian checklist inspeksi kapal yang tersinkronisasi lintas perangkat",
+      "type": "object",
+      "properties": {
+        "vesselId": { "type": "string" },
+        "vesselName": { "type": "string" },
+        "form": { "type": "object" },
+        "savedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["vesselId", "form", "savedAt"]
     }
   },
   "firestore": {
@@ -59,6 +72,10 @@
     "/inspections/{inspectionId}": {
       "schema": { "$ref": "#/entities/Inspection" },
       "description": "Koleksi data record inspeksi ketenagakerjaan kapal"
+    },
+    "/inspection_drafts/{vesselId}": {
+      "schema": { "$ref": "#/entities/InspectionDraft" },
+      "description": "Koleksi draft isian inspeksi kapal lintas perangkat"
     }
   }
 }

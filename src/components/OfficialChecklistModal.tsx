@@ -154,8 +154,11 @@ export const getInitialBlankForm = (v?: Vessel | null): OfficialChecklistForm =>
   firstAidBoxCondition: 'BAIK_BERSIH',
   hasFirstAidMedicines: false,
   hasFirstAidKit: false,
+  hasStandardMaritimeMedicineList: false,
+  hasGenericMedicineList: false,
   firstAidMedicineExpiryStatus: 'MASIH_BERLAKU',
   firstAidMedicineItems: [],
+  firstAidMedicineListText: '',
 
   crewHealthComplaints: '',
   healthComplaintNotes: '',
@@ -2277,11 +2280,54 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                     </div>
 
                     {(form.hasFirstAidMedicines || form.hasFirstAidKit) && (
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-2 text-xs">
+                      <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-3 text-xs">
+                        {/* 1. Pilihan Checklist Jenis Obat */}
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">Status Masa Kadaluarsa Obat:</label>
+                          <label className="block font-semibold text-slate-700 mb-1.5">
+                            Ketersediaan Kategori & Standar Obat:
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer text-xs transition-all ${
+                              form.hasStandardMaritimeMedicineList
+                                ? 'bg-blue-50 border-blue-400 font-bold text-blue-900'
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}>
+                              <input
+                                type="checkbox"
+                                checked={!!form.hasStandardMaritimeMedicineList}
+                                onChange={(e) => setForm({ ...form, hasStandardMaritimeMedicineList: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>1. List Obat Standar Maritim Tersedia</span>
+                            </label>
+
+                            <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer text-xs transition-all ${
+                              form.hasGenericMedicineList
+                                ? 'bg-blue-50 border-blue-400 font-bold text-blue-900'
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}>
+                              <input
+                                type="checkbox"
+                                checked={!!form.hasGenericMedicineList}
+                                onChange={(e) => setForm({ ...form, hasGenericMedicineList: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>2. List Obat Generik</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* 2. Status Masa Kadaluarsa Obat */}
+                        <div>
+                          <label className="block font-semibold text-slate-700 mb-1.5">
+                            Status Masa Kadaluarsa Obat:
+                          </label>
                           <div className="grid grid-cols-2 gap-2">
-                            <label className={`p-1.5 rounded border flex items-center gap-1.5 cursor-pointer text-[11px] ${form.firstAidMedicineExpiryStatus !== 'KADALUARSA' ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-slate-50'}`}>
+                            <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer text-[11px] transition-all ${
+                              form.firstAidMedicineExpiryStatus !== 'KADALUARSA'
+                                ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900'
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}>
                               <input
                                 type="radio"
                                 name="firstAidExpiry"
@@ -2291,7 +2337,11 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                               />
                               <span>Masih Berlaku (Aman)</span>
                             </label>
-                            <label className={`p-1.5 rounded border flex items-center gap-1.5 cursor-pointer text-[11px] ${form.firstAidMedicineExpiryStatus === 'KADALUARSA' ? 'bg-rose-50 border-rose-400 font-bold text-rose-900' : 'bg-slate-50'}`}>
+                            <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer text-[11px] transition-all ${
+                              form.firstAidMedicineExpiryStatus === 'KADALUARSA'
+                                ? 'bg-rose-50 border-rose-400 font-bold text-rose-900'
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}>
                               <input
                                 type="radio"
                                 name="firstAidExpiry"
@@ -2304,14 +2354,30 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                           </div>
                         </div>
 
+                        {/* 3. Form Isian Daftar / Jenis Obat Tersedia (Format Paragraf Multiline) */}
                         <div>
-                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Daftar / Jenis Obat Tersedia:</label>
-                          <input
-                            type="text"
-                            value={form.firstAidMedicineItems?.join(', ') || ''}
-                            onChange={(e) => setForm({ ...form, firstAidMedicineItems: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                            placeholder="Contoh: Paracetamol, Betadine/Povidone, Kasa Perban, Obat Diare, Antihistamin, Plester"
-                            className="w-full rounded border border-slate-300 p-1.5 text-xs bg-white text-slate-900"
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block font-semibold text-slate-700 text-xs">
+                              Daftar / Jenis Obat Tersedia:
+                            </label>
+                            <span className="text-[11px] text-slate-500">Format paragraf (bisa koma, spasi, poin, & enter)</span>
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={form.firstAidMedicineListText !== undefined && form.firstAidMedicineListText !== '' 
+                              ? form.firstAidMedicineListText 
+                              : (form.firstAidMedicineItems?.join('\n') || '')}
+                            onChange={(e) => {
+                              const textVal = e.target.value;
+                              const items = textVal.split(/[\n,]+/).map(s => s.trim().replace(/^[-*•\d.]+\s*/, '')).filter(Boolean);
+                              setForm({
+                                ...form,
+                                firstAidMedicineListText: textVal,
+                                firstAidMedicineItems: items
+                              });
+                            }}
+                            placeholder={"Contoh:\n- Paracetamol (Analgesik/Antipiretik)\n- Povidone Iodine / Betadine & Kasa Steril\n- Antasida & Oralit / Obat Diare\n- Antihistamin & Salep Luka Bakar"}
+                            className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 leading-relaxed font-sans"
                           />
                         </div>
                       </div>

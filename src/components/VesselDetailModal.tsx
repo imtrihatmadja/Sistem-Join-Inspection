@@ -1195,17 +1195,36 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                         </div>
 
                         {/* Indikator 21: Obat-obatan */}
-                        <div className="p-3 space-y-1">
+                        <div className="p-3 space-y-1.5">
                           <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
                             <span className="font-bold text-slate-900">
                               17. Obat-Obatan P3K Maritim & Status Kadaluarsa (Indikator No. 21)
                             </span>
-                            <span className={`font-semibold px-2 py-0.5 rounded text-[10px] ${checklist?.firstAidMedicineExpiryStatus === 'KADALUARSA' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                              {checklist?.hasFirstAidMedicines || checklist?.hasFirstAidKit ? '✓ Tersedia Obat-Obatan' : '✗ Obat Tidak Tersedia'}
-                              {checklist?.firstAidMedicineExpiryStatus === 'KADALUARSA' ? ' | [ADA OBAT KADALUARSA]' : ' | Masa Berlaku Aman'}
-                              {checklist?.firstAidMedicineItems && checklist.firstAidMedicineItems.length > 0 ? ` (${checklist.firstAidMedicineItems.join(', ')})` : ''}
-                            </span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className={`font-semibold px-2 py-0.5 rounded text-[10px] ${checklist?.firstAidMedicineExpiryStatus === 'KADALUARSA' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                {checklist?.hasFirstAidMedicines || checklist?.hasFirstAidKit ? '✓ Tersedia Obat-Obatan' : '✗ Obat Tidak Tersedia'}
+                                {checklist?.firstAidMedicineExpiryStatus === 'KADALUARSA' ? ' | [ADA OBAT KADALUARSA]' : ' | Masa Berlaku Aman'}
+                              </span>
+                              {checklist?.hasStandardMaritimeMedicineList && (
+                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-semibold">
+                                  ✓ Standar Maritim
+                                </span>
+                              )}
+                              {checklist?.hasGenericMedicineList && (
+                                <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-semibold">
+                                  ✓ Obat Generik
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          {(checklist?.firstAidMedicineListText || (checklist?.firstAidMedicineItems && checklist.firstAidMedicineItems.length > 0)) && (
+                            <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-[11px] text-slate-800 space-y-0.5">
+                              <span className="font-semibold text-slate-600 block text-[10px]">Daftar / Jenis Obat Tersedia:</span>
+                              <p className="whitespace-pre-line text-slate-700 leading-relaxed">
+                                {checklist.firstAidMedicineListText || checklist.firstAidMedicineItems?.join(', ')}
+                              </p>
+                            </div>
+                          )}
                           <div className="p-2 bg-slate-50 rounded border border-slate-200/80 text-slate-800 text-[11px]">
                             <span className="font-semibold text-slate-600">Catatan Pengawas: </span>
                             {checklist?.noteIndicator21 || <span className="text-slate-400 italic">Tidak ada catatan khusus.</span>}

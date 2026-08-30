@@ -160,9 +160,12 @@ export interface OfficialChecklistForm {
   // 21. Obat-Obatan P3K Maritim (Scored)
   hasFirstAidMedicines?: boolean;
   hasFirstAidKit?: boolean; // compatibility fallback
+  hasStandardMaritimeMedicineList?: boolean; // 1. List Obat Standar Maritim Tersedia
+  hasGenericMedicineList?: boolean; // 2. List Obat Generik
   firstAidAvailable?: 'LENGKAP' | 'KURANG_LENGKAP' | 'TIDAK_ADA';
   firstAidMedicineExpiryStatus?: 'MASIH_BERLAKU' | 'KADALUARSA' | 'SEBAGIAN_KADALUARSA';
   firstAidMedicineItems?: string[];
+  firstAidMedicineListText?: string; // Form isian daftar / jenis obat tersedia (format paragraf/multiline)
 
   // 22. Keluhan Kesehatan ABK (Informasi)
   crewHealthComplaints?: string;

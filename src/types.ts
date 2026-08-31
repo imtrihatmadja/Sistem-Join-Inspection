@@ -36,7 +36,8 @@ export interface OfficialChecklistForm {
   tandaSelar?: string;
   sipiNumber?: string; // 4. Nomor SIPI / SIUP Kapal
   registrationNumber?: string;
-  homePort?: string; // 5. Pelabuhan Pangkalan
+  homePort?: string; // 5. Pelabuhan Pangkalan 1 (Utama)
+  secondaryHomePort?: string; // Pelabuhan Pangkalan 2 (Tambahan/Sekunder)
   fishingGround?: string; // 6. Daerah Penangkapan Ikan (WPPNRI)
   fishingGearType?: string; // 7. Jenis Alat Tangkap
   gearType?: string;
@@ -309,18 +310,48 @@ export interface RiskBreakdown {
   actionRequired: string;
 }
 
+export interface FieldChange {
+  field: string;
+  label: string;
+  category?: 'Profil Kapal' | 'Dokumen & Legalitas' | 'PKL & Upah' | 'K3 & Keselamatan' | 'Akomodasi & Pangan' | 'Asuransi & Jaminan Sosial' | 'Kesehatan & P3K' | 'Status & Rekomendasi' | 'Tim Pengawas' | 'Lainnya';
+  oldValue: any;
+  newValue: any;
+  oldDisplay: string;
+  newDisplay: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string; // ISO string with complete date and time
+  updatedBy: string; // user email / inspector
+  actionType: 'CREATE_INSPECTION' | 'UPDATE_INSPECTION' | 'STATUS_CHANGE' | 'EDIT_VESSEL';
+  title: string;
+  summary?: string;
+  changes: FieldChange[];
+  previousSnapshot?: {
+    riskScore?: number;
+    riskLevel?: RiskLevel;
+    followUpStatus?: FollowUpStatus;
+    totalCrew?: number;
+    inspectionDate?: string;
+    inspectionPort?: string;
+  };
+}
+
 export interface InspectionRecord {
   id: string;
   vesselId: string;
   vesselName: string;
   registrationNumber: string;
   homePort: string;
+  secondaryHomePort?: string;
   inspectionDate: string;
   inspectionPort: string;
   leadAgency: string; // e.g. 'PSDKP - KKP', 'Pengawas Ketenagakerjaan Kemnaker', 'Syahbandar KSOP', 'Tim Pengawas Gabungan'
   inspectors: string; // Nama pengawas gabungan
   crewData: CrewComplianceData;
   checklistData?: OfficialChecklistForm; // Formulir Daftar Periksa Lengkap
+  previousChecklistData?: OfficialChecklistForm; // Isian formulir sebelum update terakhir
   violations: InspectionViolation[];
   riskEvaluation: RiskBreakdown;
   followUpStatus: FollowUpStatus;
@@ -328,6 +359,9 @@ export interface InspectionRecord {
   actionDeadline?: string;
   createdBy: string;
   createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string; // Tanggal & Waktu update terakhir
+  changeLogs?: AuditLogEntry[]; // Riwayat log perubahan per isian
 }
 
 export interface InspectionDraft {
@@ -349,6 +383,7 @@ export interface Vessel {
   captainName?: string; // Nama Nahkoda / Tekong
   agentName?: string;
   homePort: string;
+  secondaryHomePort?: string; // Pelabuhan Pangkalan 2 (Kedua / Sekunder)
   fishingGround?: string; // Daerah Penangkapan Ikan (WPPNRI)
   gearType: string; // Alat tangkap: Purse Seine, Longline, Gillnet, Bouke Ami, dll.
   crewCapacity: number;

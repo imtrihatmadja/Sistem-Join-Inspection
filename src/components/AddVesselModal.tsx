@@ -28,6 +28,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
   const [captainName, setCaptainName] = useState('');
   const [agentName, setAgentName] = useState('');
   const [homePort, setHomePort] = useState(INDONESIAN_PORTS[1] || 'PPS Nizam Zachman Jakarta');
+  const [secondaryHomePort, setSecondaryHomePort] = useState('');
   const [fishingGround, setFishingGround] = useState('WPPNRI 711 / Laut Natuna');
   const [gearType, setGearType] = useState('Purse Seine Pelagis Besar');
   const [crewCapacity, setCrewCapacity] = useState<number>(20);
@@ -46,6 +47,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
         setCaptainName(vesselToEdit.captainName || '');
         setAgentName(vesselToEdit.agentName || '');
         setHomePort(vesselToEdit.homePort || INDONESIAN_PORTS[1] || 'PPS Nizam Zachman Jakarta');
+        setSecondaryHomePort(vesselToEdit.secondaryHomePort || '');
         setFishingGround(vesselToEdit.fishingGround || 'WPPNRI 711 / Laut Natuna');
         setGearType(vesselToEdit.gearType || 'Purse Seine Pelagis Besar');
         setCrewCapacity(vesselToEdit.crewCapacity || 20);
@@ -59,6 +61,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
         setCaptainName('');
         setAgentName('');
         setHomePort(INDONESIAN_PORTS[1] || 'PPS Nizam Zachman Jakarta');
+        setSecondaryHomePort('');
         setFishingGround('WPPNRI 711 / Laut Natuna');
         setGearType('Purse Seine Pelagis Besar');
         setCrewCapacity(20);
@@ -92,6 +95,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
             captainName: captainName.trim() || undefined,
             agentName: agentName.trim() || 'Agen Maritim Terdaftar',
             homePort,
+            secondaryHomePort: secondaryHomePort.trim() || undefined,
             fishingGround: fishingGround.trim() || 'WPPNRI 711 / Laut Natuna',
             gearType,
             crewCapacity: Number(crewCapacity) || 15,
@@ -108,6 +112,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
             captainName: captainName.trim() || undefined,
             agentName: agentName.trim() || 'Agen Maritim Terdaftar',
             homePort,
+            secondaryHomePort: secondaryHomePort.trim() || undefined,
             fishingGround: fishingGround.trim() || 'WPPNRI 711 / Laut Natuna',
             gearType,
             crewCapacity: Number(crewCapacity) || 15,
@@ -303,7 +308,7 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Pelabuhan Pangkalan:
+                Pelabuhan Pangkalan 1 (Utama): <span className="text-rose-500">*</span>
               </label>
               <select
                 value={homePort}
@@ -314,6 +319,31 @@ export const AddVesselModal: React.FC<AddVesselModalProps> = ({
                   <optgroup key={group.categoryName} label={`📍 ${group.categoryName}`}>
                     {group.ports.map((port) => (
                       <option key={port} value={port}>
+                        {port}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Pelabuhan Pangkalan 2 (Kedua / Tambahan):
+                </label>
+                <span className="text-[10px] text-slate-500 font-medium">Opsional</span>
+              </div>
+              <select
+                value={secondaryHomePort || ''}
+                onChange={(e) => setSecondaryHomePort(e.target.value)}
+                className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">-- Tidak Ada (Hanya 1 Pelabuhan) --</option>
+                {PORT_GROUPS.map((group) => (
+                  <optgroup key={`sec-${group.categoryName}`} label={`📍 ${group.categoryName}`}>
+                    {group.ports.map((port) => (
+                      <option key={`sec-${port}`} value={port}>
                         {port}
                       </option>
                     ))}

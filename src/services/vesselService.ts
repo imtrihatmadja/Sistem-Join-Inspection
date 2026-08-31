@@ -10,7 +10,8 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase/config';
-import { InspectionRecord, Vessel, InspectionStats, InspectionDraft, OfficialChecklistForm } from '../types';
+import { InspectionRecord, Vessel, InspectionStats, InspectionDraft, OfficialChecklistForm, AuditLogEntry } from '../types';
+import { generateChecklistDiff } from '../utils/diffAuditor';
 import {
   saveSingleVesselToSupabase,
   saveSingleInspectionToSupabase,
@@ -370,52 +371,74 @@ export async function saveNewInspection(
   inspection: InspectionRecord,
   currentVessel?: Vessel
 ): Promise<void> {
-  // 1. Update local inspections
   const currentInspections = getLocalInspections();
-  const updatedInspections = [inspection, ...currentInspections.filter(i => i.id !== inspection.id)];
+  const existingInspection = currentInspections.find(i => i.id === inspection.id);
+  const nowIso = new Date().toISOString();
+
+  // Audit trail detection
+  let finalInspection: InspectionRecord = { ...inspection };
+  if (!finalInspection.updatedAt) {
+    finalInspection.updatedAt = nowIso;
+  }
+
+  // Jika ini update terhadap inspeksi yang sudah ada dan belum ada changeLogs baru
+  if (existingInspection && existingInspection.checklistData && finalInspection.checklistData) {
+    const diff = generateChecklistDiff(existingInspection.checklistData, finalInspection.checklistData, finalInspection.updatedBy || finalInspection.createdBy);
+    if (diff) {
+      finalInspection.changeLogs = [diff, ...(existingInspection.changeLogs || [])];
+      finalInspection.previousChecklistData = existingInspection.checklistData;
+      finalInspection.updatedAt = nowIso;
+    } else {
+      finalInspection.changeLogs = existingInspection.changeLogs || [];
+      finalInspection.previousChecklistData = existingInspection.previousChecklistData;
+    }
+  }
+
+  // 1. Update local inspections
+  const updatedInspections = [finalInspection, ...currentInspections.filter(i => i.id !== finalInspection.id)];
   saveLocalInspections(updatedInspections);
   notifyInspectionSubscribers(updatedInspections);
 
   // 2. Update vessel risk metrics
   const currentVessels = getLocalVessels();
-  const existingVessel = currentVessel || currentVessels.find(v => v.id === inspection.vesselId);
+  const existingVessel = currentVessel || currentVessels.find(v => v.id === finalInspection.vesselId);
 
   const updatedVessel: Vessel = existingVessel ? {
     ...existingVessel,
-    riskScore: inspection.riskEvaluation.score,
-    riskLevel: inspection.riskEvaluation.riskLevel,
-    totalInspections: (existingVessel.totalInspections || 0) + 1,
-    lastInspectionDate: inspection.inspectionDate,
-    lastInspectionPort: inspection.inspectionPort,
-    status: inspection.riskEvaluation.riskLevel === 'HIGH' ? 'FLAGGED' : (inspection.riskEvaluation.riskLevel === 'LOW' ? 'CLEARED' : 'ACTIVE'),
-    activeViolationsCount: inspection.violations.length,
-    criticalViolationsCount: inspection.violations.filter(v => v.severity === 'CRITICAL').length,
-    lastRecommendation: inspection.riskEvaluation.recommendation,
-    latestChecklist: inspection.checklistData || existingVessel.latestChecklist,
-    updatedAt: new Date().toISOString()
+    riskScore: finalInspection.riskEvaluation.score,
+    riskLevel: finalInspection.riskEvaluation.riskLevel,
+    totalInspections: (existingVessel.totalInspections || 0) + (existingInspection ? 0 : 1),
+    lastInspectionDate: finalInspection.inspectionDate,
+    lastInspectionPort: finalInspection.inspectionPort,
+    status: finalInspection.riskEvaluation.riskLevel === 'HIGH' ? 'FLAGGED' : (finalInspection.riskEvaluation.riskLevel === 'LOW' ? 'CLEARED' : 'ACTIVE'),
+    activeViolationsCount: finalInspection.violations.length,
+    criticalViolationsCount: finalInspection.violations.filter(v => v.severity === 'CRITICAL').length,
+    lastRecommendation: finalInspection.riskEvaluation.recommendation,
+    latestChecklist: finalInspection.checklistData || existingVessel.latestChecklist,
+    updatedAt: nowIso
   } : {
-    id: inspection.vesselId,
-    name: inspection.vesselName,
-    registrationNumber: inspection.registrationNumber || 'SIPI-REG-NEW',
+    id: finalInspection.vesselId,
+    name: finalInspection.vesselName,
+    registrationNumber: finalInspection.registrationNumber || 'SIPI-REG-NEW',
     grossTonnage: 90,
     callSign: 'YDX-0000',
     ownerName: 'Pemilik Kapal Terdata',
     agentName: 'Agen Maritim Terdata',
-    homePort: inspection.homePort || inspection.inspectionPort,
+    homePort: finalInspection.homePort || finalInspection.inspectionPort,
     gearType: 'Purse Seine / Longline',
-    crewCapacity: inspection.crewData?.totalCrew || 20,
-    riskScore: inspection.riskEvaluation.score,
-    riskLevel: inspection.riskEvaluation.riskLevel,
+    crewCapacity: finalInspection.crewData?.totalCrew || 20,
+    riskScore: finalInspection.riskEvaluation.score,
+    riskLevel: finalInspection.riskEvaluation.riskLevel,
     totalInspections: 1,
-    lastInspectionDate: inspection.inspectionDate,
-    lastInspectionPort: inspection.inspectionPort,
-    status: inspection.riskEvaluation.riskLevel === 'HIGH' ? 'FLAGGED' : 'ACTIVE',
-    activeViolationsCount: inspection.violations.length,
-    criticalViolationsCount: inspection.violations.filter(v => v.severity === 'CRITICAL').length,
-    lastRecommendation: inspection.riskEvaluation.recommendation,
-    latestChecklist: inspection.checklistData,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    lastInspectionDate: finalInspection.inspectionDate,
+    lastInspectionPort: finalInspection.inspectionPort,
+    status: finalInspection.riskEvaluation.riskLevel === 'HIGH' ? 'FLAGGED' : 'ACTIVE',
+    activeViolationsCount: finalInspection.violations.length,
+    criticalViolationsCount: finalInspection.violations.filter(v => v.severity === 'CRITICAL').length,
+    lastRecommendation: finalInspection.riskEvaluation.recommendation,
+    latestChecklist: finalInspection.checklistData,
+    createdAt: nowIso,
+    updatedAt: nowIso
   };
 
   const updatedVessels = [
@@ -431,7 +454,7 @@ export async function saveNewInspection(
     if (!vRes.success && vRes.error) {
       console.warn('Supabase vessel update note:', vRes.error);
     }
-    const iRes = await saveSingleInspectionToSupabase(inspection);
+    const iRes = await saveSingleInspectionToSupabase(finalInspection);
     if (!iRes.success && iRes.error) {
       console.warn('Supabase inspection save note:', iRes.error);
     }
@@ -441,10 +464,10 @@ export async function saveNewInspection(
 
   // 4. Background sync to Firestore with strict sanitization (prevents undefined field rejection)
   try {
-    const sanitizedInspection = sanitizeForFirestore(inspection);
+    const sanitizedInspection = sanitizeForFirestore(finalInspection);
     const sanitizedVessel = sanitizeForFirestore(updatedVessel);
 
-    withTimeout(setDoc(doc(db, INSPECTIONS_COLLECTION, inspection.id), sanitizedInspection), 3000).catch((e) =>
+    withTimeout(setDoc(doc(db, INSPECTIONS_COLLECTION, finalInspection.id), sanitizedInspection), 3000).catch((e) =>
       console.warn('Firestore inspection background save note:', e)
     );
     withTimeout(setDoc(doc(db, VESSELS_COLLECTION, updatedVessel.id), sanitizedVessel), 3000).catch((e) =>
@@ -456,7 +479,7 @@ export async function saveNewInspection(
 
   // 5. Clean up any saved draft for this vessel across local storage and cloud database
   try {
-    await deleteInspectionDraft(inspection.vesselId);
+    await deleteInspectionDraft(finalInspection.vesselId);
   } catch (err) {
     console.warn('Draft cleanup notice:', err);
   }
@@ -503,23 +526,67 @@ export async function updateFollowUp(
   notes?: string
 ): Promise<void> {
   const currentInspections = getLocalInspections();
+  const nowIso = new Date().toISOString();
+  let updatedRecord: InspectionRecord | null = null;
+
   const updatedInspections = currentInspections.map(i => {
     if (i.id === inspectionId) {
-      return {
+      const oldStatus = i.followUpStatus;
+      const statusChangeLog: AuditLogEntry = {
+        id: `LOG-STATUS-${Date.now()}`,
+        timestamp: nowIso,
+        updatedBy: 'Pengawas Tindak Lanjut',
+        actionType: 'STATUS_CHANGE',
+        title: `Pembaruan Status Tindak Lanjut (${oldStatus} → ${newStatus})`,
+        summary: notes ? `Catatan: ${notes}` : `Status diperbarui menjadi ${newStatus}.`,
+        changes: [
+          {
+            field: 'followUpStatus',
+            label: 'Status Tindak Lanjut Temuan',
+            category: 'Status & Rekomendasi',
+            oldValue: oldStatus,
+            newValue: newStatus,
+            oldDisplay: oldStatus === 'RESOLVED' ? 'Selesai (Resolved)' : (oldStatus === 'IN_PROGRESS' ? 'Dalam Proses' : 'Perlu Tindak Lanjut (Pending)'),
+            newDisplay: newStatus === 'RESOLVED' ? 'Selesai (Resolved)' : (newStatus === 'IN_PROGRESS' ? 'Dalam Proses' : 'Perlu Tindak Lanjut (Pending)')
+          },
+          ...(notes ? [{
+            field: 'officialNotes',
+            label: 'Catatan Resmi Penanganan',
+            category: 'Status & Rekomendasi' as const,
+            oldValue: i.officialNotes,
+            newValue: notes,
+            oldDisplay: i.officialNotes || '(Belum ada catatan)',
+            newDisplay: notes
+          }] : [])
+        ]
+      };
+
+      updatedRecord = {
         ...i,
         followUpStatus: newStatus,
-        officialNotes: notes ? `${i.officialNotes}\n[${new Date().toISOString().split('T')[0]}]: ${notes}` : i.officialNotes
+        officialNotes: notes ? `${i.officialNotes}\n[${nowIso.split('T')[0]}]: ${notes}` : i.officialNotes,
+        updatedAt: nowIso,
+        updatedBy: 'Pengawas Tindak Lanjut',
+        changeLogs: [statusChangeLog, ...(i.changeLogs || [])]
       };
+      return updatedRecord;
     }
     return i;
   });
+
   saveLocalInspections(updatedInspections);
   notifyInspectionSubscribers(updatedInspections);
 
   // Sync to Supabase
-  updateInspectionStatusInSupabase(inspectionId, newStatus, notes).catch((err) =>
-    console.warn('Supabase follow-up sync notice:', err)
-  );
+  if (updatedRecord) {
+    saveSingleInspectionToSupabase(updatedRecord).catch((err) =>
+      console.warn('Supabase inspection full sync notice:', err)
+    );
+  } else {
+    updateInspectionStatusInSupabase(inspectionId, newStatus, notes).catch((err) =>
+      console.warn('Supabase follow-up sync notice:', err)
+    );
+  }
 
   // Sync to Firestore
   try {
@@ -527,7 +594,9 @@ export async function updateFollowUp(
     withTimeout(
       updateDoc(docRef, {
         followUpStatus: newStatus,
-        ...(notes ? { officialNotes: notes } : {})
+        updatedAt: nowIso,
+        ...(notes ? { officialNotes: notes } : {}),
+        ...(updatedRecord?.changeLogs ? { changeLogs: sanitizeForFirestore(updatedRecord.changeLogs) } : {})
       }),
       2000
     ).catch((err) => console.warn('Firestore update follow-up notice:', err));

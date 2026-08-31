@@ -176,6 +176,7 @@ export async function syncVesselsToSupabase(vessels: Vessel[]): Promise<{ count:
       owner_name: v.ownerName,
       agent_name: v.agentName || null,
       home_port: v.homePort,
+      secondary_home_port: v.secondaryHomePort || null,
       gear_type: v.gearType,
       crew_capacity: Number(v.crewCapacity) || 0,
       risk_score: Number(v.riskScore) || 0,
@@ -220,6 +221,7 @@ export async function saveSingleVesselToSupabase(v: Vessel): Promise<{ success: 
       owner_name: v.ownerName,
       agent_name: v.agentName || null,
       home_port: v.homePort,
+      secondary_home_port: v.secondaryHomePort || null,
       gear_type: v.gearType,
       crew_capacity: Number(v.crewCapacity) || 0,
       risk_score: Number(v.riskScore) || 0,
@@ -255,26 +257,38 @@ export async function syncInspectionsToSupabase(inspections: InspectionRecord[])
   if (!client) return { count: 0, error: 'Supabase client belum aktif' };
 
   try {
-    const records = inspections.map((i) => ({
-      id: i.id,
-      vessel_id: i.vesselId,
-      vessel_name: i.vesselName,
-      registration_number: i.registrationNumber,
-      home_port: i.homePort,
-      inspection_date: i.inspectionDate ? i.inspectionDate.split('T')[0] : new Date().toISOString().split('T')[0],
-      inspection_port: i.inspectionPort,
-      lead_agency: i.leadAgency,
-      inspectors: i.inspectors,
-      crew_data: sanitizeForJsonb(i.crewData),
-      checklist_data: sanitizeForJsonb(i.checklistData),
-      violations: sanitizeForJsonb(i.violations || []),
-      risk_evaluation: sanitizeForJsonb(i.riskEvaluation),
-      follow_up_status: i.followUpStatus,
-      official_notes: i.officialNotes,
-      action_deadline: i.actionDeadline ? i.actionDeadline.split('T')[0] : null,
-      created_by: i.createdBy,
-      created_at: i.createdAt || new Date().toISOString()
-    }));
+    const records = inspections.map((i) => {
+      // Enrich checklistData with audit metadata to ensure PostgreSQL JSONB stores full history
+      const enrichedChecklist = i.checklistData ? {
+        ...i.checklistData,
+        _auditLogs: i.changeLogs || [],
+        _previousForm: i.previousChecklistData || null,
+        _updatedAt: i.updatedAt || new Date().toISOString(),
+        _updatedBy: i.updatedBy || i.createdBy || 'Pengawas'
+      } : null;
+
+      return {
+        id: i.id,
+        vessel_id: i.vesselId,
+        vessel_name: i.vesselName,
+        registration_number: i.registrationNumber,
+        home_port: i.homePort,
+        secondary_home_port: i.secondaryHomePort || null,
+        inspection_date: i.inspectionDate ? i.inspectionDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        inspection_port: i.inspectionPort,
+        lead_agency: i.leadAgency,
+        inspectors: i.inspectors,
+        crew_data: sanitizeForJsonb(i.crewData),
+        checklist_data: sanitizeForJsonb(enrichedChecklist),
+        violations: sanitizeForJsonb(i.violations || []),
+        risk_evaluation: sanitizeForJsonb(i.riskEvaluation),
+        follow_up_status: i.followUpStatus,
+        official_notes: i.officialNotes,
+        action_deadline: i.actionDeadline ? i.actionDeadline.split('T')[0] : null,
+        created_by: i.createdBy,
+        created_at: i.createdAt || new Date().toISOString()
+      };
+    });
 
     const { error } = await client
       .from('inspections')
@@ -296,18 +310,27 @@ export async function saveSingleInspectionToSupabase(i: InspectionRecord): Promi
   if (!client) return { success: false, error: 'Supabase client belum aktif' };
 
   try {
+    const enrichedChecklist = i.checklistData ? {
+      ...i.checklistData,
+      _auditLogs: i.changeLogs || [],
+      _previousForm: i.previousChecklistData || null,
+      _updatedAt: i.updatedAt || new Date().toISOString(),
+      _updatedBy: i.updatedBy || i.createdBy || 'Pengawas'
+    } : null;
+
     const record = {
       id: i.id,
       vessel_id: i.vesselId,
       vessel_name: i.vesselName,
       registration_number: i.registrationNumber,
       home_port: i.homePort,
+      secondary_home_port: i.secondaryHomePort || null,
       inspection_date: i.inspectionDate ? i.inspectionDate.split('T')[0] : new Date().toISOString().split('T')[0],
       inspection_port: i.inspectionPort,
       lead_agency: i.leadAgency,
       inspectors: i.inspectors,
       crew_data: sanitizeForJsonb(i.crewData),
-      checklist_data: sanitizeForJsonb(i.checklistData),
+      checklist_data: sanitizeForJsonb(enrichedChecklist),
       violations: sanitizeForJsonb(i.violations || []),
       risk_evaluation: sanitizeForJsonb(i.riskEvaluation),
       follow_up_status: i.followUpStatus,
@@ -430,6 +453,7 @@ export async function fetchVesselsFromSupabase(): Promise<{ data: Vessel[]; erro
         ownerName: row.owner_name || 'Tidak Diketahui',
         agentName: row.agent_name || '',
         homePort: row.home_port || 'Pelabuhan Tidak Diketahui',
+        secondaryHomePort: row.secondary_home_port || undefined,
         gearType: row.gear_type || 'Alat Tangkap',
         crewCapacity: Number(row.crew_capacity) || 0,
         riskScore: Number(row.risk_score) || 0,
@@ -483,25 +507,36 @@ export async function fetchInspectionsFromSupabase(): Promise<{ data: Inspection
         primaryRiskFactors: []
       };
 
+      // Restore changeLogs and previousChecklistData if embedded or in row
+      const changeLogs = row.change_logs ? safeParseJsonb(row.change_logs) : (checklistData?._auditLogs || []);
+      const previousChecklistData = row.previous_checklist_data ? safeParseJsonb(row.previous_checklist_data) : (checklistData?._previousForm || undefined);
+      const updatedAt = row.updated_at || checklistData?._updatedAt || row.created_at || new Date().toISOString();
+      const updatedBy = row.updated_by || checklistData?._updatedBy || row.created_by || 'Pengawas Lapangan';
+
       return {
         id: row.id,
         vesselId: row.vessel_id,
         vesselName: row.vessel_name || 'Kapal Tanpa Nama',
         registrationNumber: row.registration_number || '',
         homePort: row.home_port || '',
+        secondaryHomePort: row.secondary_home_port || undefined,
         inspectionDate: row.inspection_date || new Date().toISOString().split('T')[0],
         inspectionPort: row.inspection_port || '',
         leadAgency: row.lead_agency || 'Kemnaker & KKP',
         inspectors: row.inspectors || '',
         crewData: crewData as any,
         checklistData: checklistData as any,
+        previousChecklistData: previousChecklistData as any,
         violations: violations as any,
         riskEvaluation: riskEvaluation as any,
         followUpStatus: row.follow_up_status || 'PENDING',
         officialNotes: row.official_notes || '',
         actionDeadline: row.action_deadline || undefined,
         createdBy: row.created_by || 'Admin Pengawas',
-        createdAt: row.created_at || new Date().toISOString()
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: updatedAt,
+        updatedBy: updatedBy,
+        changeLogs: Array.isArray(changeLogs) ? changeLogs : []
       };
     });
 
@@ -602,7 +637,30 @@ export async function deleteInspectionFromSupabase(inspectionId: string): Promis
 }
 
 /**
- * Returns PostgreSQL DDL SQL Schema Script for Supabase
+ * Returns concise SQL migration script to update existing database tables in Supabase
+ */
+export function getMigrationSqlScript(): string {
+  return `-- =========================================================================
+-- SKRIP UPDATE / MIGRASI DATABASE SUPABASE (JALANKAN DI SQL EDITOR)
+-- Menambahkan dukungan pencatatan Pelabuhan Pangkalan ke-2 (Secondary Home Port)
+-- =========================================================================
+
+-- 1. Tambah kolom secondary_home_port di tabel vessels
+ALTER TABLE IF EXISTS public.vessels 
+ADD COLUMN IF NOT EXISTS secondary_home_port VARCHAR(255);
+
+-- 2. Tambah kolom secondary_home_port di tabel inspections
+ALTER TABLE IF EXISTS public.inspections 
+ADD COLUMN IF NOT EXISTS secondary_home_port VARCHAR(255);
+
+-- 3. Tambah indeks pencarian cepat untuk pelabuhan kedua
+CREATE INDEX IF NOT EXISTS idx_vessels_secondary_port ON public.vessels (secondary_home_port);
+CREATE INDEX IF NOT EXISTS idx_inspections_secondary_port ON public.inspections (secondary_home_port);
+`;
+}
+
+/**
+ * Returns PostgreSQL DDL SQL Schema Script for Supabase (Full Database Creation)
  */
 export function getCompleteSqlSchema(): string {
   return `-- =========================================================================
@@ -620,7 +678,8 @@ CREATE TABLE IF NOT EXISTS public.vessels (
     call_sign VARCHAR(50),
     owner_name VARCHAR(255) NOT NULL,
     agent_name VARCHAR(255),
-    home_port VARCHAR(255) NOT NULL,
+    home_port VARCHAR(255) NOT NULL, -- Pelabuhan Pangkalan 1 (Utama)
+    secondary_home_port VARCHAR(255), -- Pelabuhan Pangkalan 2 (Tambahan / Sekunder)
     gear_type VARCHAR(150) NOT NULL,
     crew_capacity INT NOT NULL DEFAULT 0,
     risk_score INT NOT NULL DEFAULT 0,
@@ -642,6 +701,7 @@ CREATE INDEX IF NOT EXISTS idx_vessels_name ON public.vessels (name);
 CREATE INDEX IF NOT EXISTS idx_vessels_reg ON public.vessels (registration_number);
 CREATE INDEX IF NOT EXISTS idx_vessels_risk ON public.vessels (risk_level, risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_vessels_port ON public.vessels (home_port);
+CREATE INDEX IF NOT EXISTS idx_vessels_sec_port ON public.vessels (secondary_home_port);
 
 -- 2. TABEL HASIL INSPEKSI BERSAMA (INSPECTIONS)
 CREATE TABLE IF NOT EXISTS public.inspections (
@@ -650,6 +710,7 @@ CREATE TABLE IF NOT EXISTS public.inspections (
     vessel_name VARCHAR(255) NOT NULL,
     registration_number VARCHAR(100) NOT NULL,
     home_port VARCHAR(255) NOT NULL,
+    secondary_home_port VARCHAR(255),
     inspection_date DATE NOT NULL,
     inspection_port VARCHAR(255) NOT NULL,
     lead_agency VARCHAR(255) NOT NULL,
@@ -668,6 +729,7 @@ CREATE TABLE IF NOT EXISTS public.inspections (
 CREATE INDEX IF NOT EXISTS idx_inspections_vessel ON public.inspections (vessel_id);
 CREATE INDEX IF NOT EXISTS idx_inspections_date ON public.inspections (inspection_date DESC);
 CREATE INDEX IF NOT EXISTS idx_inspections_port ON public.inspections (inspection_port);
+CREATE INDEX IF NOT EXISTS idx_inspections_sec_port ON public.inspections (secondary_home_port);
 
 -- 3. TABEL BUKTI FOTO & DOKUMEN GOOGLE DRIVE (VESSEL_EVIDENCES)
 -- Mengikat setiap file foto dan dokumen berukuran besar langsung pada nama kapal

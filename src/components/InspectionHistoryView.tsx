@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { InspectionRecord, Vessel } from '../types';
 import { RiskBadge } from './RiskBadge';
-import { Search, Calendar, FileText, ChevronRight, MapPin, Trash2, Loader2 } from 'lucide-react';
+import { Search, Calendar, FileText, ChevronRight, MapPin, Trash2, Loader2, Clock, History, Sparkles } from 'lucide-react';
 import { deleteInspection } from '../services/vesselService';
+import { AuditLogViewer } from './AuditLogViewer';
+import { formatFullDateTimeWIB } from '../utils/diffAuditor';
 
 interface InspectionHistoryViewProps {
   inspections: InspectionRecord[];
@@ -137,9 +139,16 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
                         </span>
                         <span className="font-mono text-[11px] text-slate-500">({insp.registrationNumber})</span>
                       </div>
-                      <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
-                        <span>{insp.inspectionDate} • {insp.inspectionPort}</span>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
+                          <span>{insp.inspectionDate} • {insp.inspectionPort}</span>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>Update: {formatFullDateTimeWIB(insp.updatedAt || insp.createdAt)}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -184,6 +193,9 @@ export const InspectionHistoryView: React.FC<InspectionHistoryViewProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Audit Trail & Change Log Viewer */}
+                <AuditLogViewer inspection={insp} className="mt-1" />
 
                 {/* Quick link & Data status */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

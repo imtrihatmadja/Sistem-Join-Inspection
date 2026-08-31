@@ -18,7 +18,8 @@ import {
   fetchVesselsFromSupabase,
   fetchInspectionsFromSupabase,
   fetchEvidencesFromSupabase,
-  getCompleteSqlSchema
+  getCompleteSqlSchema,
+  getMigrationSqlScript
 } from '../services/supabaseService';
 import { reloadAllDataFromSupabase } from '../services/vesselService';
 import {
@@ -81,6 +82,7 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
   const [isPulling, setIsPulling] = useState<boolean>(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
+  const [sqlViewMode, setSqlViewMode] = useState<'MIGRATION' | 'FULL'>('MIGRATION');
 
   // Active target vessel for modal upload
   const [targetVesselForUpload, setTargetVesselForUpload] = useState<Vessel | null>(null);
@@ -199,7 +201,8 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
   };
 
   const handleCopySql = () => {
-    navigator.clipboard.writeText(getCompleteSqlSchema());
+    const textToCopy = sqlViewMode === 'MIGRATION' ? getMigrationSqlScript() : getCompleteSqlSchema();
+    navigator.clipboard.writeText(textToCopy);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
   };
@@ -663,37 +666,79 @@ export const CloudDatabaseView: React.FC<CloudDatabaseViewProps> = ({
 
           {/* DDL SQL Schema Generator & Copy Box */}
           <div className="bg-white rounded-xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                   <Code className="w-4 h-4 text-blue-600" />
-                  <span>Script Skema DDL Database Supabase (PostgreSQL)</span>
+                  <span>Script Skema DDL & Migrasi Database Supabase (PostgreSQL)</span>
                 </h4>
                 <p className="text-xs text-slate-500">
-                  Jalankan skrip ini sekali di menu <strong>SQL Editor</strong> pada dashboard Supabase Anda.
+                  Jalankan skrip ini di menu <strong>SQL Editor</strong> pada dashboard Supabase Anda.
                 </p>
               </div>
 
-              <button
-                onClick={handleCopySql}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
-              >
-                {copiedSql ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Tersalin ke Clipboard!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Salin Seluruh SQL</span>
-                  </>
-                )}
-              </button>
+              {/* Mode Selector */}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSqlViewMode('MIGRATION')}
+                    className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      sqlViewMode === 'MIGRATION'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Update / Migrasi (ALTER TABLE)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSqlViewMode('FULL')}
+                    className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      sqlViewMode === 'FULL'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Skema Penuh (CREATE TABLE)
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleCopySql}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                >
+                  {copiedSql ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Salin SQL</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
+            {sqlViewMode === 'MIGRATION' ? (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950 text-xs flex items-center justify-between">
+                <div>
+                  <strong>Skrip Migrasi Tambahan:</strong> Menambahkan kolom <code>secondary_home_port</code> pada tabel <code>vessels</code> & <code>inspections</code> tanpa merusak/menghapus data kapal yang sudah ada.
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-950 text-xs flex items-center justify-between">
+                <div>
+                  <strong>Skrip Skema Lengkap:</strong> Membuat seluruh tabel database (<code>vessels</code>, <code>inspections</code>, <code>vessel_evidences</code>), indeks, dan RLS security policies dari awal.
+                </div>
+              </div>
+            )}
+
             <pre className="p-4 bg-slate-900 text-slate-200 rounded-xl text-[11px] font-mono overflow-x-auto max-h-72 border border-slate-800 leading-relaxed">
-              <code>{getCompleteSqlSchema()}</code>
+              <code>{sqlViewMode === 'MIGRATION' ? getMigrationSqlScript() : getCompleteSqlSchema()}</code>
             </pre>
           </div>
 

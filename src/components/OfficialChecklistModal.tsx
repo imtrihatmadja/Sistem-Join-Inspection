@@ -7,6 +7,7 @@ import {
   InspectionViolation
 } from '../types';
 import { calculateRiskFromOfficialChecklist } from '../services/riskEngine';
+import { generateChecklistDiff } from '../utils/diffAuditor';
 import {
   saveInspectionDraft,
   getInspectionDraft,
@@ -57,6 +58,7 @@ export const getInitialBlankForm = (v?: Vessel | null): OfficialChecklistForm =>
   sipiNumber: v?.registrationNumber || '',
   grossTonnage: v?.grossTonnage || 0,
   homePort: v?.homePort || '',
+  secondaryHomePort: v?.secondaryHomePort || '',
   fishingGround: v?.fishingGround || 'WPPNRI 711 / Laut Natuna',
   gearType: v?.gearType || '',
   fishingGearType: v?.gearType || '',
@@ -296,6 +298,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
   const [newOwnerName, setNewOwnerName] = useState<string>('');
   const [newAgentName, setNewAgentName] = useState<string>('');
   const [newHomePort, setNewHomePort] = useState<string>(INDONESIAN_PORTS[1] || 'PPS Nizam Zachman Jakarta');
+  const [newSecondaryHomePort, setNewSecondaryHomePort] = useState<string>('');
   const [newGearType, setNewGearType] = useState<string>('Purse Seine Pelagis Besar');
   const [newCrewCapacity, setNewCrewCapacity] = useState<number>(20);
   const [isCreatingVessel, setIsCreatingVessel] = useState<boolean>(false);
@@ -558,6 +561,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         captainName: form.captainName || 'Nahkoda Terdaftar',
         agentName: newAgentName.trim() || 'Agen Maritim Terdaftar',
         homePort: newHomePort,
+        secondaryHomePort: newSecondaryHomePort.trim() || undefined,
         fishingGround: 'WPPNRI 711 / Laut Natuna',
         gearType: newGearType,
         crewCapacity: Number(newCrewCapacity) || 15,
@@ -597,6 +601,12 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
     try {
       const selectedVessel = vessels.find((v) => v.id === selectedVesselId);
       const inspectionId = `INSP-OFFICIAL-${Date.now()}`;
+      const nowIso = new Date().toISOString();
+      const previousForm = selectedVessel?.latestChecklist;
+
+      // Hitung diff perubahan antara data tersimpan sebelumnya dan isian baru yang disubmit
+      const auditEntry = generateChecklistDiff(previousForm, form, currentUserEmail || 'Pengawas Lapangan');
+      const changeLogs = auditEntry ? [auditEntry] : [];
 
       const crewData: CrewComplianceData = {
         totalCrew: form.totalCrewCount,
@@ -617,12 +627,14 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
         vesselName: form.vesselName,
         registrationNumber: form.sipiNumber,
         homePort: form.homePort,
+        secondaryHomePort: form.secondaryHomePort || undefined,
         inspectionDate: form.inspectionDate,
         inspectionPort: form.inspectionLocation,
         leadAgency: 'Tim Pengawasan Bersama (Kemnaker, KKP/PSDKP & KSOP)',
         inspectors: `${form.fisheryInspectorName || 'Pengawas Perikanan'} & ${form.laborInspectorName || 'Pengawas Ketenagakerjaan'}`,
         crewData,
         checklistData: form,
+        previousChecklistData: previousForm,
         violations,
         riskEvaluation,
         followUpStatus: riskEvaluation.riskLevel === 'HIGH' ? 'PENDING' : 'RESOLVED',
@@ -630,7 +642,10 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
           ? (form.additionalNotes ? `${form.additionalNotes}\n[Rekomendasi]: ${form.officialRecommendations}` : form.officialRecommendations) 
           : (form.additionalNotes || riskEvaluation.recommendation),
         createdBy: currentUserEmail || 'pengawas@inspeksikapal.go.id',
-        createdAt: new Date().toISOString()
+        createdAt: nowIso,
+        updatedBy: currentUserEmail || 'pengawas@inspeksikapal.go.id',
+        updatedAt: nowIso,
+        changeLogs: changeLogs
       };
 
       // Kunci data inspeksi resmi ke database Supabase & state
@@ -894,10 +909,10 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block font-semibold text-slate-700 text-xs sm:text-sm">
-                        5. Pelabuhan Pangkalan
+                        5. Pelabuhan Pangkalan 1 (Utama)
                       </label>
                       <span className="text-[10px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
-                        Standar Pelabuhan RI
+                        Pangkalan Utama
                       </span>
                     </div>
                     <select
@@ -946,6 +961,67 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         />
                         <p className="text-[10px] text-slate-500 mt-0.5">
                           Nama pelabuhan akan distandarisasi untuk pengelompokan Matriks Risiko.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-slate-700 text-xs sm:text-sm">
+                        5b. Pelabuhan Pangkalan 2 (Kedua / Tambahan)
+                      </label>
+                      <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                        Opsional
+                      </span>
+                    </div>
+                    <select
+                      value={
+                        !form.secondaryHomePort
+                          ? ''
+                          : PORT_GROUPS.some(g => g.ports.includes(form.secondaryHomePort || ''))
+                            ? form.secondaryHomePort
+                            : 'CUSTOM'
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          if (PORT_GROUPS.some(g => g.ports.includes(form.secondaryHomePort || ''))) {
+                            setForm({ ...form, secondaryHomePort: '' });
+                          }
+                        } else {
+                          setForm({ ...form, secondaryHomePort: val });
+                        }
+                      }}
+                      className="w-full rounded-lg border border-slate-300 p-2.5 text-xs sm:text-sm bg-white text-slate-900 font-medium focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- Tidak Ada (Hanya 1 Pelabuhan Pangkalan) --</option>
+                      {PORT_GROUPS.map((group) => (
+                        <optgroup key={`sec-${group.categoryName}`} label={`📍 ${group.categoryName}`}>
+                          {group.ports.map((port) => (
+                            <option key={`sec-${port}`} value={port}>
+                              {port}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <optgroup label="⚙️ Opsi Lain">
+                        <option value="CUSTOM">-- Pelabuhan Ke-2 Lainnya (Tulis Manual) --</option>
+                      </optgroup>
+                    </select>
+
+                    {/* Manual input if secondary port is custom */}
+                    {form.secondaryHomePort !== '' && form.secondaryHomePort !== undefined && (!PORT_GROUPS.some(g => g.ports.includes(form.secondaryHomePort || '')) || form.secondaryHomePort === 'CUSTOM') && (
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          value={form.secondaryHomePort === 'CUSTOM' ? '' : form.secondaryHomePort}
+                          onChange={(e) => setForm({ ...form, secondaryHomePort: e.target.value })}
+                          placeholder="Ketik nama pelabuhan pangkalan kedua lainnya..."
+                          className="w-full rounded-lg border border-emerald-300 p-2 text-xs bg-emerald-50/40 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Sistem mencatat hingga 2 pelabuhan pangkalan terdaftar untuk fleksibilitas operasional kapal.
                         </p>
                       </div>
                     )}
@@ -3690,19 +3766,38 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Pelabuhan Pangkalan
-                  </label>
-                  <select
-                    value={newHomePort}
-                    onChange={(e) => setNewHomePort(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-white text-slate-900"
-                  >
-                    {INDONESIAN_PORTS.filter(p => p !== 'Semua Pelabuhan').map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Pelabuhan Pangkalan 1 (Utama) <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newHomePort}
+                      onChange={(e) => setNewHomePort(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-white text-slate-900 font-medium"
+                    >
+                      {INDONESIAN_PORTS.filter(p => p !== 'Semua Pelabuhan').map((p) => (
+                        <option key={`qp1-${p}`} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Pelabuhan Pangkalan 2</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Opsional</span>
+                    </label>
+                    <select
+                      value={newSecondaryHomePort}
+                      onChange={(e) => setNewSecondaryHomePort(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-white text-slate-900 font-medium"
+                    >
+                      <option value="">-- Tidak Ada --</option>
+                      {INDONESIAN_PORTS.filter(p => p !== 'Semua Pelabuhan').map((p) => (
+                        <option key={`qp2-${p}`} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

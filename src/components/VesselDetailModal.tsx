@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { getRiskColor } from '../services/riskEngine';
 import { VesselEvidenceVault } from './VesselEvidenceVault';
+import { AuditLogViewer } from './AuditLogViewer';
+import { formatFullDateTimeWIB } from '../utils/diffAuditor';
 import { getStoredEvidences } from '../services/googleDriveService';
 import { deleteVessel } from '../services/vesselService';
 
@@ -419,7 +421,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-50">
                       <span className="text-slate-500">Pelabuhan Pangkalan:</span>
-                      <span className="font-semibold text-slate-800">{vessel.homePort}</span>
+                      <div className="text-right">
+                        <div className="font-semibold text-slate-800">{vessel.homePort}</div>
+                        {vessel.secondaryHomePort && (
+                          <div className="text-[11px] text-emerald-700 font-medium mt-0.5">
+                            + {vessel.secondaryHomePort} <span className="text-[10px] text-slate-400 font-normal">(Pangkalan 2)</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-slate-500">Kapasitas Maksimal ABK:</span>
@@ -483,22 +492,33 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
 
           {/* TAB 2: Riwayat Inspeksi */}
           {activeTab === 'history' && (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               {vesselInspections.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 text-xs">
+                <div className="text-center py-10 text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <Clock className="w-8 h-8 mx-auto text-slate-400 mb-2" />
                   Belum ada catatan inspeksi resmi untuk kapal ini.
                 </div>
               ) : (
-                vesselInspections.map((insp) => (
+                vesselInspections.map((insp, idx) => (
                   <div
                     key={insp.id}
-                    className="p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2.5"
+                    className="p-4 sm:p-5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-2xs"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-teal-600 shrink-0" />
-                        <span className="font-bold text-slate-900 text-xs">{insp.inspectionDate}</span>
-                        <span className="text-xs text-slate-500 font-mono">({insp.inspectionPort})</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
+                          #{vesselInspections.length - idx}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">{insp.inspectionDate}</span>
+                            <span className="text-xs text-slate-500 font-mono">({insp.inspectionPort})</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>Terakhir Diupdate: <strong>{formatFullDateTimeWIB(insp.updatedAt || insp.createdAt)}</strong></span>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <RiskBadge level={insp.riskEvaluation.riskLevel} score={insp.riskEvaluation.score} size="sm" />
@@ -510,12 +530,12 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-600 space-y-1">
-                      <div><strong>Tim:</strong> {insp.inspectors}</div>
-                      <div><strong>Rekomendasi:</strong> {insp.riskEvaluation.recommendation}</div>
+                    <div className="text-xs text-slate-600 space-y-1.5">
+                      <div><strong>Tim Pengawas:</strong> {insp.inspectors}</div>
+                      <div><strong>Rekomendasi Resmi:</strong> {insp.riskEvaluation.recommendation}</div>
                       {insp.officialNotes && (
-                        <div className="text-slate-500 italic bg-slate-50 p-2 rounded-lg mt-1.5 text-[11px]">
-                          "{insp.officialNotes}"
+                        <div className="text-slate-600 bg-slate-50 p-2.5 rounded-lg text-[11px] border border-slate-100">
+                          <strong>Catatan Lapangan:</strong> "{insp.officialNotes}"
                         </div>
                       )}
                       {insp.checklistData && (
@@ -538,41 +558,51 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                             Catatan Khusus Lapangan per Indikator:
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-700">
-                            {insp.checklistData.noteIndicator8 && <div><strong>No. 8:</strong> {insp.checklistData.noteIndicator8}</div>}
-                            {insp.checklistData.noteIndicator9 && <div><strong>No. 9:</strong> {insp.checklistData.noteIndicator9}</div>}
-                            {insp.checklistData.noteIndicator10 && <div><strong>No. 10:</strong> {insp.checklistData.noteIndicator10}</div>}
-                            {insp.checklistData.noteIndicator11 && <div><strong>No. 11:</strong> {insp.checklistData.noteIndicator11}</div>}
-                            {insp.checklistData.noteIndicator12 && <div><strong>No. 12:</strong> {insp.checklistData.noteIndicator12}</div>}
-                            {insp.checklistData.noteIndicator13 && <div><strong>No. 13:</strong> {insp.checklistData.noteIndicator13}</div>}
-                            {insp.checklistData.noteIndicator16 && <div><strong>No. 16:</strong> {insp.checklistData.noteIndicator16}</div>}
-                            {insp.checklistData.noteIndicator17 && <div><strong>No. 17:</strong> {insp.checklistData.noteIndicator17}</div>}
-                            {insp.checklistData.noteIndicator18 && <div><strong>No. 18:</strong> {insp.checklistData.noteIndicator18}</div>}
-                            {insp.checklistData.noteIndicator19 && <div><strong>No. 19:</strong> {insp.checklistData.noteIndicator19}</div>}
-                            {insp.checklistData.noteIndicator20 && <div><strong>No. 20:</strong> {insp.checklistData.noteIndicator20}</div>}
-                            {insp.checklistData.noteIndicator21 && <div><strong>No. 21:</strong> {insp.checklistData.noteIndicator21}</div>}
-                            {insp.checklistData.noteIndicator22 && <div><strong>No. 22:</strong> {insp.checklistData.noteIndicator22}</div>}
+                            {insp.checklistData.noteIndicator8 && <div><strong>No. 8 (PKL):</strong> {insp.checklistData.noteIndicator8}</div>}
+                            {insp.checklistData.noteIndicator9 && <div><strong>No. 9 (Upah):</strong> {insp.checklistData.noteIndicator9}</div>}
+                            {insp.checklistData.noteIndicator10 && <div><strong>No. 10 (BPJS TK):</strong> {insp.checklistData.noteIndicator10}</div>}
+                            {insp.checklistData.noteIndicator11 && <div><strong>No. 11 (BPJS Kes):</strong> {insp.checklistData.noteIndicator11}</div>}
+                            {insp.checklistData.noteIndicator12 && <div><strong>No. 12 (Istirahat):</strong> {insp.checklistData.noteIndicator12}</div>}
+                            {insp.checklistData.noteIndicator13 && <div><strong>No. 13 (Akomodasi):</strong> {insp.checklistData.noteIndicator13}</div>}
+                            {insp.checklistData.noteIndicator16 && <div><strong>No. 16 (APD):</strong> {insp.checklistData.noteIndicator16}</div>}
+                            {insp.checklistData.noteIndicator17 && <div><strong>No. 17 (APAR):</strong> {insp.checklistData.noteIndicator17}</div>}
+                            {insp.checklistData.noteIndicator18 && <div><strong>No. 18 (P3K):</strong> {insp.checklistData.noteIndicator18}</div>}
+                            {insp.checklistData.noteIndicator19 && <div><strong>No. 19 (Potongan):</strong> {insp.checklistData.noteIndicator19}</div>}
+                            {insp.checklistData.noteIndicator20 && <div><strong>No. 20 (Buku Pelaut):</strong> {insp.checklistData.noteIndicator20}</div>}
+                            {insp.checklistData.noteIndicator21 && <div><strong>No. 21 (BST-F):</strong> {insp.checklistData.noteIndicator21}</div>}
+                            {insp.checklistData.noteIndicator22 && <div><strong>No. 22 (Tahan Dokumen):</strong> {insp.checklistData.noteIndicator22}</div>}
                           </div>
                         </div>
                       )}
                     </div>
 
+                    {/* Audit Trail Viewer: Menampilkan perubahan dan isian sebelumnya */}
+                    <AuditLogViewer inspection={insp} className="mt-2" />
+
                     {/* Follow up status toggle */}
-                    <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <span className="text-slate-500 font-medium">Status Tindak Lanjut:</span>
+                    <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-t border-slate-100">
+                      <span className="text-slate-500 font-medium">Ubah Status Tindak Lanjut:</span>
                       <div className="flex items-center gap-1.5">
                         <button
                           disabled={updatingId === insp.id}
                           onClick={() => handleStatusChange(insp.id, 'RESOLVED')}
-                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-semibold cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-semibold cursor-pointer transition-colors"
                         >
                           Selesai (Resolved)
                         </button>
                         <button
                           disabled={updatingId === insp.id}
                           onClick={() => handleStatusChange(insp.id, 'IN_PROGRESS')}
-                          className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[11px] font-semibold cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[11px] font-semibold cursor-pointer transition-colors"
                         >
                           Dalam Proses
+                        </button>
+                        <button
+                          disabled={updatingId === insp.id}
+                          onClick={() => handleStatusChange(insp.id, 'PENDING')}
+                          className="px-2.5 py-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold cursor-pointer transition-colors"
+                        >
+                          Pending
                         </button>
                       </div>
                     </div>
@@ -727,7 +757,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Pelabuhan Pangkalan:</span>
-                        <strong>{checklist?.homePort || vessel.homePort}</strong>
+                        <div className="text-right">
+                          <strong className="text-slate-900">{checklist?.homePort || vessel.homePort}</strong>
+                          {(checklist?.secondaryHomePort || vessel.secondaryHomePort) && (
+                            <span className="block text-[10px] text-emerald-800 font-semibold">
+                              + {checklist?.secondaryHomePort || vessel.secondaryHomePort} (Pangkalan 2)
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

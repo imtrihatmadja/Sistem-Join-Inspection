@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { PORT_GROUPS } from '../constants/ports';
+import { AgencyLogo } from './AgencyLogos';
 
 interface SidebarProps {
   activeTab: 'dashboard' | 'vessels' | 'matrix' | 'history' | 'storage';
@@ -68,47 +69,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div className="p-4 border-b border-slate-800 space-y-3">
           {/* 3 Logos Secara Horizontal: KKP, Kemnaker, DFW Indonesia */}
-          <div className="flex items-center justify-between gap-1.5 p-2 bg-white/95 rounded-lg border border-slate-700/60 shadow-xs">
-            <div className="flex-1 flex items-center justify-center h-8 px-1">
-              <img
-                src="https://lh3.googleusercontent.com/d/1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5"
-                alt="Logo KKP"
-                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                title="Kementerian Kelautan dan Perikanan"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5&sz=w200';
-                }}
-              />
+          <div className="flex items-center justify-between gap-1.5 p-2 bg-white rounded-lg border border-slate-700/60 shadow-xs">
+            <div className="flex-1 flex items-center justify-center h-7.5 px-0.5">
+              <AgencyLogo agency="kkp" size="sm" />
             </div>
             <div className="w-px h-6 bg-slate-300 shrink-0"></div>
-            <div className="flex-1 flex items-center justify-center h-8 px-1">
-              <img
-                src="https://lh3.googleusercontent.com/d/162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU"
-                alt="Logo Kemnaker"
-                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                title="Kementerian Ketenagakerjaan"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU&sz=w200';
-                }}
-              />
+            <div className="flex-1 flex items-center justify-center h-7.5 px-0.5">
+              <AgencyLogo agency="kemnaker" size="sm" />
             </div>
             <div className="w-px h-6 bg-slate-300 shrink-0"></div>
-            <div className="flex-1 flex items-center justify-center h-8 px-1">
-              <img
-                src="https://lh3.googleusercontent.com/d/1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP"
-                alt="Logo DFW Indonesia"
-                className="max-h-7 max-w-full object-contain transition-opacity duration-200"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                title="DFW Indonesia"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = 'https://drive.google.com/thumbnail?id=1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP&sz=w200';
-                }}
-              />
+            <div className="flex-1 flex items-center justify-center h-7.5 px-0.5">
+              <AgencyLogo agency="dfw" size="sm" />
             </div>
           </div>
 

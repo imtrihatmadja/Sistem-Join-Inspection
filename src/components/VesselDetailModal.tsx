@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Vessel, InspectionRecord, VesselEvidence } from '../types';
 import { RiskBadge } from './RiskBadge';
+import { OfficialLetterheadLogos } from './AgencyLogos';
 import {
   X,
   Ship,
@@ -62,6 +63,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [selectedInspectionId, setSelectedInspectionId] = useState<string>('');
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -87,32 +89,36 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
     setUpdatingId(null);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const printElement = document.getElementById('printable-berita-acara');
     if (!printElement) {
       window.print();
       return;
     }
 
+    setIsPrinting(true);
+
     try {
-      // Create hidden iframe for dedicated and clean printing
+      // 1. Create dedicated off-screen printable iframe
       const iframe = document.createElement('iframe');
       iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = '820px';
+      iframe.style.height = '1160px';
       iframe.style.border = '0';
-      iframe.style.visibility = 'hidden';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
       document.body.appendChild(iframe);
 
       const doc = iframe.contentWindow?.document;
       if (!doc) {
         window.print();
+        setIsPrinting(false);
         return;
       }
 
-      // Collect all active stylesheets and Tailwind styles
+      // 2. Extract parent stylesheets & Tailwind runtime rules
       const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
         .map(node => node.outerHTML)
         .join('\n');
@@ -129,7 +135,10 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
             <style>
               @page {
                 size: A4 portrait;
-                margin: 12mm 14mm;
+                margin: 10mm 12mm 10mm 12mm;
+              }
+              *, *::before, *::after {
+                box-sizing: border-box !important;
               }
               body {
                 background: #ffffff !important;
@@ -139,6 +148,8 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                 print-color-adjust: exact !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                font-size: 11pt;
+                line-height: 1.4;
               }
               #printable-berita-acara {
                 border: none !important;
@@ -157,16 +168,23 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
               }
               table {
                 page-break-inside: auto;
-                width: 100%;
+                width: 100% !important;
+                border-collapse: collapse !important;
               }
               tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              img, svg {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                display: inline-block !important;
+                max-width: 100% !important;
               }
             </style>
           </head>
           <body>
-            <div style="padding: 4px 0;">
+            <div id="printable-berita-acara">
               ${printElement.innerHTML}
             </div>
           </body>
@@ -174,22 +192,42 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
       `);
       doc.close();
 
-      // Trigger browser print dialog after styles & images render
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch {
-          window.print();
-        } finally {
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 3000);
-        }
-      }, 300);
-    } catch {
+      // 3. Ensure all images and fonts inside iframe are fully loaded before triggering print dialog
+      const iframeImages = Array.from(doc.images);
+      const imgPromises = iframeImages.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          // Timeout safety in case an image hangs
+          setTimeout(resolve, 2000);
+        });
+      });
+
+      await Promise.all([
+        ...imgPromises,
+        doc.fonts ? doc.fonts.ready.catch(() => {}) : Promise.resolve()
+      ]);
+
+      // Small tick to ensure browser layout engine settles
+      await new Promise((r) => setTimeout(r, 150));
+
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        window.print();
+      } finally {
+        setIsPrinting(false);
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 5000);
+      }
+    } catch (err) {
+      console.warn('Print preview fallback triggered:', err);
+      setIsPrinting(false);
       window.print();
     }
   };
@@ -613,10 +651,20 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrint}
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
+                    disabled={isPrinting}
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white font-bold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
                   >
-                    <Printer className="w-4 h-4" />
-                    <span>Cetak Berita Acara (PDF / Print)</span>
+                    {isPrinting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
+                        <span>Menyiapkan Dokumen Cetak...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Printer className="w-4 h-4" />
+                        <span>Cetak Berita Acara (PDF / Print)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -628,30 +676,11 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
               >
                 
                 {/* Official Letterhead (KOP Resmi) */}
-                <div className="text-center pb-4 border-b-2 border-slate-900 space-y-2 print-avoid-break">
+                <div className="text-center pb-3 space-y-1.5 print-avoid-break">
                   {/* Logo Row KKP, Kemnaker, DFW Indonesia */}
-                  <div className="flex items-center justify-center gap-6 pb-1">
-                    <img
-                      src="https://lh3.googleusercontent.com/d/1pExM-RcrSvZCzZr4Tb1W9vO9tobENUK5"
-                      alt="Logo KKP"
-                      className="h-10 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                    <img
-                      src="https://lh3.googleusercontent.com/d/162CIMqaOSBOdbfA7hX4GWwmpaFabA1FU"
-                      alt="Logo Kemnaker"
-                      className="h-10 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                    <img
-                      src="https://lh3.googleusercontent.com/d/1pkI3rAaIsMZt6rRBWopmlTCMTvRfTleP"
-                      alt="Logo DFW Indonesia"
-                      className="h-10 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
+                  <OfficialLetterheadLogos className="pb-1" />
 
-                  <div className="text-[10px] sm:text-xs font-bold tracking-widest text-slate-700 uppercase">
+                  <div className="text-[10px] sm:text-xs font-bold tracking-widest text-slate-800 uppercase">
                     KEMENTERIAN KELAUTAN DAN PERIKANAN • KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA
                   </div>
                   <div className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase">
@@ -661,8 +690,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                     BERITA ACARA & LEMBAR RESUME HASIL PENGAWASAN KAPAL PERIKANAN
                   </h3>
                   <p className="text-[10px] text-slate-500 font-sans">
-                    Standar Bersama TIm Pemeriksaan Bersama Kementerian
+                    Standar Pengawasan Terpadu Ketenagakerjaan & K3 Sektor Perikanan Tangkap
                   </p>
+
+                  {/* Garis KOP Resmi Double Border */}
+                  <div className="pt-2">
+                    <div className="border-b-2 border-slate-900 w-full mb-[2px]"></div>
+                    <div className="border-b border-slate-900 w-full"></div>
+                  </div>
                 </div>
 
                 {/* Bagian 1: Data Identitas & Legalitas Kapal */}
@@ -1512,15 +1547,15 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Pengawas Perikanan KKP */}
+                    {/* Pengawas */}
                     <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-between min-h-[140px] bg-slate-50/40">
                       <div>
                         <div className="text-[10px] text-slate-500 font-bold uppercase">Kementerian Kelautan & Perikanan</div>
-                        <div className="font-bold text-slate-900 mt-1">Pengawas Perikanan (KKP)</div>
+                        <div className="font-bold text-slate-900 mt-1">Pengawas</div>
                       </div>
                       <div className="pt-8">
                         <div className="font-bold text-slate-900 underline">
-                          {checklist?.fisheryInspectorName || activePrintInspection?.inspectors || '(.............................................)'}
+                          {checklist?.fisheryInspectorName?.trim() || '(.............................................)'}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-0.5">
                           {checklist?.fisheryInspectorNip ? `NIP: ${checklist.fisheryInspectorNip}` : 'Pengawas Perikanan / PSDKP'}
@@ -1536,7 +1571,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       </div>
                       <div className="pt-8">
                         <div className="font-bold text-slate-900 underline">
-                          {checklist?.laborInspectorName || (currentUserEmail ? currentUserEmail.split('@')[0] : '(.............................................)')}
+                          {checklist?.laborInspectorName?.trim() || '(.............................................)'}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-0.5">
                           {checklist?.laborInspectorNip ? `NIP: ${checklist.laborInspectorNip}` : 'Pengawas Norma Ketenagakerjaan'}

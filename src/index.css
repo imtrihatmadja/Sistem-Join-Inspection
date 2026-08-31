@@ -1,37 +1,78 @@
 @import "tailwindcss";
 
 @media print {
-  body {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
   }
 
-  /* Sembunyikan elemen latar dan UI navigasi saat print */
-  nav, header, aside, .no-print, #navbar-container, #sidebar-container {
+  html, body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 11pt !important;
+  }
+
+  /* Sembunyikan semua elemen modal overlay, header, navigasi, dan tombol aksi saat print */
+  nav, header, aside, .no-print, #navbar-container, #sidebar-container, .fixed.inset-0.z-50:not(:has(#printable-berita-acara)) {
     display: none !important;
   }
 
-  /* Tampilkan area berita acara dengan ukuran penuh */
+  /* Hilangkan backdrop gelap dan shadow modal saat print */
+  .fixed.inset-0.z-50 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+  }
+
+  .fixed.inset-0.z-50 > div {
+    max-width: 100% !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Tampilkan area berita acara dengan ukuran penuh dan presisi */
   #printable-berita-acara {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: static !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 12px !important;
+    padding: 0 !important;
     background: #ffffff !important;
     border: none !important;
     box-shadow: none !important;
     display: block !important;
-    z-index: 99999 !important;
   }
 
-  /* Hindari pemotongan baris tabel dan kartu catatan di tengah halaman */
+  /* Pastikan gambar dan logo instansi tampil tajam dan dicetak */
+  img, svg {
+    max-width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    break-inside: avoid !important;
+  }
+
+  /* Hindari pemotongan elemen penting di tengah halaman (KOP, identitas, tabel, rekomendasi, tanda tangan) */
   .print-avoid-break {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
+
+  table {
+    page-break-inside: auto;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
+
 

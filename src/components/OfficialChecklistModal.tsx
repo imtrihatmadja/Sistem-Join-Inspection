@@ -78,7 +78,9 @@ export const getInitialBlankForm = (v?: Vessel | null): OfficialChecklistForm =>
   captainNik: '',
   captainPhone: '',
   fisheryInspectorName: '',
+  fisheryInspectorNip: '',
   laborInspectorName: '',
+  laborInspectorNip: '',
   noteSection1: '',
 
   // Section 2: PKL & Pengupahan
@@ -3450,7 +3452,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
                     <h5 className="font-bold text-slate-800">2. Tim Pengawas Gabungan</h5>
                     <div>
                       <label className="block text-[11px] text-slate-500 mb-0.5">Pengawas Perikanan (KKP/PSDKP):</label>
@@ -3458,6 +3460,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         type="text"
                         value={form.fisheryInspectorName || ''}
                         onChange={(e) => setForm({ ...form, fisheryInspectorName: e.target.value })}
+                        placeholder="Nama Pengawas Perikanan"
                         className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
                       />
                     </div>
@@ -3467,6 +3470,7 @@ export const OfficialChecklistModal: React.FC<OfficialChecklistModalProps> = ({
                         type="text"
                         value={form.laborInspectorName || ''}
                         onChange={(e) => setForm({ ...form, laborInspectorName: e.target.value })}
+                        placeholder="Nama Pengawas Ketenagakerjaan"
                         className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white text-slate-900"
                       />
                     </div>

@@ -226,7 +226,7 @@ export default function App() {
 
           {/* Subdued Footer Note */}
           <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2 pb-6">
-            <span>Sistem Inpeksi Bersama Ketenagakerjaan di Kapal Perikanan</span>
+            <span>Sistem Inspeksi Bersama Ketenagakerjaan di Kapal Perikanan</span>
           </div>
 
         </main>

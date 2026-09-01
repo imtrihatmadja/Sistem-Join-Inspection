@@ -91,7 +91,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5">
-              Standar Bersama TIm Pemeriksaan Bersama Kementerian
+              Standar Bersama Tim Pemeriksaan Bersama Kementerian
             </p>
           </div>
         </div>

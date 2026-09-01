@@ -1,6 +1,6 @@
 {
-  "name": "Sistem Inpeksi Bersama Ketenagakerjaan di Kapal Perikanan",
-  "description": "Sistem Database Inspeksi Bersama Ketenagakerjaan Kapal Perikanan dan Pemantauan Kepatuhan Dokumen Awak Kapal Real-Time.",
+  "name": "Sistem Inspeksi Bersama Ketenagakerjaan di Kapal Perikanan",
+  "description": "Sistem Database Terpusat Hasil Inspeksi Bersama Ketenagakerjaan Kapal Perikanan dan Pemantauan Kepatuhan K3 & Awak Kapal.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

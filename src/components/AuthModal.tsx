@@ -38,7 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Autentikasi Pengawas</h3>
-              <p className="text-xs text-slate-500">Sistem Inpeksi Kapal</p>
+              <p className="text-xs text-slate-500">Sistem Inspeksi Kapal</p>
             </div>
           </div>
           <button

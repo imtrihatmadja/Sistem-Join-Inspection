@@ -29,10 +29,12 @@ import {
   MapPin,
   Anchor,
   FileCheck,
-  Pencil
+  Pencil,
+  TrendingUp
 } from 'lucide-react';
 import { getRiskColor } from '../services/riskEngine';
 import { VesselEvidenceVault } from './VesselEvidenceVault';
+import { VesselRiskTrendChart } from './VesselRiskTrendChart';
 import { AuditLogViewer } from './AuditLogViewer';
 import { formatFullDateTimeWIB } from '../utils/diffAuditor';
 import { getStoredEvidences } from '../services/googleDriveService';
@@ -59,7 +61,7 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
   onEditVessel,
   currentUserEmail
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'evidence' | 'history' | 'violations' | 'print'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'evidence' | 'history' | 'trend' | 'violations' | 'print'>('profile');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [evidences, setEvidences] = useState<VesselEvidence[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
@@ -339,6 +341,18 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('trend')}
+            className={`py-2.5 sm:py-3 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'trend'
+                ? 'border-teal-600 text-teal-700'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-teal-600" />
+            <span>Tren Skor Risiko</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('violations')}
             className={`py-2.5 sm:py-3 px-3 text-xs font-semibold border-b-2 transition-colors shrink-0 cursor-pointer ${
               activeTab === 'violations'
@@ -610,6 +624,14 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                 ))
               )}
             </div>
+          )}
+
+          {/* TAB: Tren Skor Risiko (Monitoring Statistik) */}
+          {activeTab === 'trend' && (
+            <VesselRiskTrendChart
+              vessel={vessel}
+              inspections={vesselInspections}
+            />
           )}
 
           {/* TAB 3: Temuan Pelanggaran */}

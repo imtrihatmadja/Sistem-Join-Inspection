@@ -170,6 +170,7 @@ export async function syncVesselsToSupabase(vessels: Vessel[]): Promise<{ count:
     const records = vessels.map((v) => ({
       id: v.id,
       name: v.name,
+      fisheries_register_number: v.fisheriesRegisterNumber || null,
       registration_number: v.registrationNumber,
       gross_tonnage: Number(v.grossTonnage) || 0,
       call_sign: v.callSign || null,
@@ -215,6 +216,7 @@ export async function saveSingleVesselToSupabase(v: Vessel): Promise<{ success: 
     const record = {
       id: v.id,
       name: v.name,
+      fisheries_register_number: v.fisheriesRegisterNumber || null,
       registration_number: v.registrationNumber,
       gross_tonnage: Number(v.grossTonnage) || 0,
       call_sign: v.callSign || null,
@@ -447,6 +449,7 @@ export async function fetchVesselsFromSupabase(): Promise<{ data: Vessel[]; erro
       return {
         id: row.id,
         name: row.name || 'Kapal Tanpa Nama',
+        fisheriesRegisterNumber: row.fisheries_register_number || row.fisheries_reg_number || undefined,
         registrationNumber: row.registration_number || row.id,
         grossTonnage: Number(row.gross_tonnage) || 0,
         callSign: row.call_sign || '',
@@ -642,18 +645,33 @@ export async function deleteInspectionFromSupabase(inspectionId: string): Promis
 export function getMigrationSqlScript(): string {
   return `-- =========================================================================
 -- SKRIP UPDATE / MIGRASI DATABASE SUPABASE (JALANKAN DI SQL EDITOR)
--- Menambahkan dukungan pencatatan Pelabuhan Pangkalan ke-2 (Secondary Home Port)
+-- 1. Menambahkan kolom fisheries_register_number (No. Register Kapal Perikanan)
+-- 2. Menambahkan indeks unik anti-duplikasi kapal
+-- 3. Menambahkan dukungan Pelabuhan Pangkalan ke-2 (Secondary Home Port)
 -- =========================================================================
 
--- 1. Tambah kolom secondary_home_port di tabel vessels
+-- 1. Tambah kolom fisheries_register_number (No. Register Kapal Perikanan) di tabel vessels
+ALTER TABLE IF EXISTS public.vessels 
+ADD COLUMN IF NOT EXISTS fisheries_register_number VARCHAR(100);
+
+-- 2. Tambah kolom fisheries_register_number di tabel inspections
+ALTER TABLE IF EXISTS public.inspections 
+ADD COLUMN IF NOT EXISTS fisheries_register_number VARCHAR(100);
+
+-- 3. Tambah indeks unik anti-duplikasi kapal (No. Register Kapal Perikanan tidak boleh sama)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vessels_fisheries_reg_unique 
+ON public.vessels (fisheries_register_number) 
+WHERE fisheries_register_number IS NOT NULL AND fisheries_register_number <> '';
+
+-- 4. Tambah kolom secondary_home_port di tabel vessels & inspections
 ALTER TABLE IF EXISTS public.vessels 
 ADD COLUMN IF NOT EXISTS secondary_home_port VARCHAR(255);
 
--- 2. Tambah kolom secondary_home_port di tabel inspections
 ALTER TABLE IF EXISTS public.inspections 
 ADD COLUMN IF NOT EXISTS secondary_home_port VARCHAR(255);
 
--- 3. Tambah indeks pencarian cepat untuk pelabuhan kedua
+-- 5. Tambah indeks pencarian cepat
+CREATE INDEX IF NOT EXISTS idx_vessels_fisheries_reg ON public.vessels (fisheries_register_number);
 CREATE INDEX IF NOT EXISTS idx_vessels_secondary_port ON public.vessels (secondary_home_port);
 CREATE INDEX IF NOT EXISTS idx_inspections_secondary_port ON public.inspections (secondary_home_port);
 `;
@@ -673,7 +691,8 @@ export function getCompleteSqlSchema(): string {
 CREATE TABLE IF NOT EXISTS public.vessels (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    registration_number VARCHAR(100) NOT NULL,
+    fisheries_register_number VARCHAR(100) UNIQUE, -- No. Register Kapal Perikanan (Unik / Anti-Duplikasi)
+    registration_number VARCHAR(100) NOT NULL,     -- Nomor SIPI / SIUP / Perizinan Berusaha
     gross_tonnage NUMERIC NOT NULL DEFAULT 0,
     call_sign VARCHAR(50),
     owner_name VARCHAR(255) NOT NULL,
@@ -698,6 +717,7 @@ CREATE TABLE IF NOT EXISTS public.vessels (
 
 -- Indeks Pencarian Kapal
 CREATE INDEX IF NOT EXISTS idx_vessels_name ON public.vessels (name);
+CREATE INDEX IF NOT EXISTS idx_vessels_fisheries_reg ON public.vessels (fisheries_register_number);
 CREATE INDEX IF NOT EXISTS idx_vessels_reg ON public.vessels (registration_number);
 CREATE INDEX IF NOT EXISTS idx_vessels_risk ON public.vessels (risk_level, risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_vessels_port ON public.vessels (home_port);
@@ -708,6 +728,7 @@ CREATE TABLE IF NOT EXISTS public.inspections (
     id VARCHAR(64) PRIMARY KEY,
     vessel_id VARCHAR(64) NOT NULL REFERENCES public.vessels(id) ON DELETE CASCADE,
     vessel_name VARCHAR(255) NOT NULL,
+    fisheries_register_number VARCHAR(100),
     registration_number VARCHAR(100) NOT NULL,
     home_port VARCHAR(255) NOT NULL,
     secondary_home_port VARCHAR(255),

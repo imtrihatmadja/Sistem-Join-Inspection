@@ -283,6 +283,7 @@ export default function App() {
       {/* 4. Modal Daftarkan Kapal Baru & Edit Kapal */}
       <AddVesselModal
         isOpen={isAddVesselModalOpen}
+        existingVessels={vessels}
         onClose={() => {
           setIsAddVesselModalOpen(false);
           setVesselToEdit(null);

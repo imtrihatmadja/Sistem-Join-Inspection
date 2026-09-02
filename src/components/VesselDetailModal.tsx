@@ -30,7 +30,8 @@ import {
   Anchor,
   FileCheck,
   Pencil,
-  TrendingUp
+  TrendingUp,
+  Lock
 } from 'lucide-react';
 import { getRiskColor } from '../services/riskEngine';
 import { VesselEvidenceVault } from './VesselEvidenceVault';
@@ -252,9 +253,20 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                 <h2 className="text-sm sm:text-lg font-bold text-slate-900 truncate">{vessel.name}</h2>
                 <RiskBadge level={vessel.riskLevel} score={vessel.riskScore} size="sm" />
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-500 font-mono truncate">
-                {vessel.registrationNumber} • {vessel.homePort}
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-mono truncate">
+                  {vessel.fisheriesRegisterNumber ? (
+                    <span className="font-semibold text-teal-800">Reg: {vessel.fisheriesRegisterNumber} • </span>
+                  ) : null}
+                  {vessel.registrationNumber} • {vessel.homePort}
+                </p>
+                {vessel.fisheriesRegisterNumber && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] bg-teal-100/90 text-teal-800 font-mono font-bold px-1.5 py-0.2 rounded border border-teal-200">
+                    <Lock className="w-2.5 h-2.5 text-teal-700" />
+                    <span>Terkunci Unik</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -421,6 +433,28 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                     )}
                   </div>
                   <div className="space-y-2 text-xs">
+                    {/* No. Register Kapal Perikanan */}
+                    <div className="flex items-center justify-between py-1.5 px-2 bg-teal-50/80 border border-teal-200 rounded-lg">
+                      <div className="flex items-center gap-1.5 text-teal-900 font-bold">
+                        <Lock className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                        <span>No. Register Kapal:</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-bold text-teal-950 text-xs">
+                          {vessel.fisheriesRegisterNumber || '-'}
+                        </span>
+                        {vessel.fisheriesRegisterNumber && (
+                          <span className="block text-[9px] text-teal-700 font-semibold">
+                            Terkunci Unik (Anti-Duplikasi)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500">No. Izin SIPI / SIUP:</span>
+                      <span className="font-mono font-semibold text-slate-800">{vessel.registrationNumber}</span>
+                    </div>
                     <div className="flex justify-between py-1 border-b border-slate-50">
                       <span className="text-slate-500">Gross Tonnage (GT):</span>
                       <span className="font-semibold text-slate-800">{vessel.grossTonnage} GT</span>
@@ -764,6 +798,10 @@ export const VesselDetailModal: React.FC<VesselDetailModalProps> = ({
                       <div className="flex justify-between border-b border-slate-200/60 pb-1">
                         <span className="text-slate-500">Nama Kapal:</span>
                         <strong className="text-slate-900">{checklist?.vesselName || vessel.name}</strong>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-200/60 pb-1">
+                        <span className="text-slate-500">No. Register Kapal Perikanan:</span>
+                        <strong className="font-mono text-teal-900">{checklist?.fisheriesRegisterNumber || vessel.fisheriesRegisterNumber || '-'}</strong>
                       </div>
                       <div className="flex justify-between border-b border-slate-200/60 pb-1">
                         <span className="text-slate-500">Nomor SIPI / SIUP:</span>

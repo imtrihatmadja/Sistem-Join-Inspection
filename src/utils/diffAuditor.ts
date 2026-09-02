@@ -42,6 +42,7 @@ export function generateChecklistDiff(
   }> = [
     // Profil Kapal & Legalitas
     { key: 'vesselName', label: 'Nama Kapal', category: 'Profil Kapal' },
+    { key: 'fisheriesRegisterNumber', label: 'No. Register Kapal Perikanan', category: 'Profil Kapal' },
     { key: 'sipiNumber', label: 'No. SIPI / Perizinan', category: 'Profil Kapal' },
     { key: 'grossTonnage', label: 'Gross Tonnage (GT)', category: 'Profil Kapal' },
     { key: 'gearType', label: 'Alat Tangkap', category: 'Profil Kapal' },

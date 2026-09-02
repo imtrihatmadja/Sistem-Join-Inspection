@@ -36,6 +36,7 @@ export interface OfficialChecklistForm {
   tandaSelar?: string;
   sipiNumber?: string; // 4. Nomor SIPI / SIUP Kapal
   registrationNumber?: string;
+  fisheriesRegisterNumber?: string; // No. Register Kapal Perikanan (Buku Kapal / Register KKP Unik)
   homePort?: string; // 5. Pelabuhan Pangkalan 1 (Utama)
   secondaryHomePort?: string; // Pelabuhan Pangkalan 2 (Tambahan/Sekunder)
   fishingGround?: string; // 6. Daerah Penangkapan Ikan (WPPNRI)
@@ -343,6 +344,7 @@ export interface InspectionRecord {
   vesselId: string;
   vesselName: string;
   registrationNumber: string;
+  fisheriesRegisterNumber?: string; // No. Register Kapal Perikanan
   homePort: string;
   secondaryHomePort?: string;
   inspectionDate: string;
@@ -376,6 +378,7 @@ export interface Vessel {
   id: string;
   name: string;
   registrationNumber: string; // No. SIPI / SIUP / Tanda Selar
+  fisheriesRegisterNumber?: string; // No. Register Kapal Perikanan (Unik / Anti-Duplikasi Buku Kapal Nasional)
   grossTonnage: number; // GT
   callSign: string;
   ownerName: string;
